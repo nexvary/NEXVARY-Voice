@@ -56,7 +56,7 @@ def phoneme_data() -> str:
     raise RuntimeError('تعذر إنشاء مسار متوافق لبيانات النطق؛ لم تتغير إعدادات الجهاز.')
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=2)
 def voice(model: str, revision: tuple):
     from piper import PiperVoice
     instance = PiperVoice.load(model,espeak_data_dir=phoneme_data())

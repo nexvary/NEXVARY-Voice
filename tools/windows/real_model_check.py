@@ -54,6 +54,13 @@ def check_managed_client():
         srt = client.translate_srt('1\n00:00:00,000 --> 00:00:02,000\nHello\n','en','ar')
         assert '00:00:00,000 --> 00:00:02,000' in srt
         log('PASS: managed engine + GUI HTTP text and SRT clients')
+        timings=[]
+        for round_index in range(3):
+            for source,target,text in [('ar','ru','مرحباً، هذا اختبار ترجمة قصير.'),('ru','ar','Здравствуйте, это короткий тест перевода.')]:
+                started=time.monotonic()
+                assert client.translate(text,source,target).strip()
+                timings.append({'round':round_index+1,'source':source,'target':target,'seconds':round(time.monotonic()-started,3)})
+        log('PERFORMANCE: actual bidirectional pivot request timings '+json.dumps(timings))
         raw = root/'samples'/'live-input.pcm'
         ffmpeg, ffprobe = desktop_setup.ffmpeg_pair(root)
         assert ffmpeg and ffprobe
@@ -68,6 +75,8 @@ def check_managed_client():
             ws.send(json.dumps({'type':'flush'}))
             meta = json.loads(ws.recv(timeout=90))
             assert meta.get('translated_text'), meta
+            assert set(meta['stage_seconds'])=={'asr','translation','tts','conversion'}
+            log('PERFORMANCE: real live pipeline stage times '+json.dumps(meta['stage_seconds']))
             speech = ws.recv(timeout=90)
             assert isinstance(speech,bytes) and len(speech)>16000
             (root/'samples'/'live-translated.pcm').write_bytes(speech)
@@ -95,7 +104,7 @@ def check_managed_client():
         translate_srt(target.with_suffix('.srt').read_text(encoding='utf-8-sig'),'ar','en',Identity())
         log('PASS: GUI video submit, progress polling, MP4 and SRT download; verified both media streams')
         manager.restart();assert manager.health()
-        return {'state':'ready','transport':'real paired HTTPS and WSS relay through DesktopAPI','hardware_audio':False}
+        return {'state':'ready','transport':'real paired HTTPS and WSS relay through DesktopAPI','hardware_audio':False,'translation_turn_seconds':timings,'live_stage_seconds':meta['stage_seconds']}
     finally:
         if bridge: bridge.stop()
         log(manager.stop())

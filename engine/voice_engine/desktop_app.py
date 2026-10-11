@@ -215,7 +215,7 @@ class VoiceWindow(QMainWindow):
         back = button("رجوع", "swap", primary=False)
         back.clicked.connect(self._back)
         side.addWidget(back)
-        side.addWidget(title("DESKTOP EDITION  •  v0.6.0", muted=True, point=10))
+        side.addWidget(title("DESKTOP EDITION  •  v0.6.1", muted=True, point=10))
         side.addWidget(title("Windows 10 / 11", muted=True, point=10))
 
         main = QFrame()
@@ -773,10 +773,12 @@ class VoiceWindow(QMainWindow):
         self.text_go.setEnabled(False)
         self._set_status("جارٍ ترجمة النص…", False)
 
+        import time
+        started=time.monotonic()
         def success(value):
             self.text_go.setEnabled(True)
             self.translation.setPlainText(value)
-            self._set_status("اكتملت الترجمة.", True)
+            self._set_status(f"اكتملت الترجمة خلال {time.monotonic()-started:.2f} ثانية (يشمل الاتصال وتحميل النموذج عند الحاجة).", True)
 
         self._task(lambda: self._api().translate(text, source, target),
                    success, on_error=lambda _: self.text_go.setEnabled(True))

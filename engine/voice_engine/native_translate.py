@@ -2,7 +2,7 @@
 
 Uses the installed package tokenizer and its CTranslate2 model. Conservative
 punctuation/chunk segmentation avoids loading a separate NLP model. Cache holds
-at most two translation models so English pivoting has bounded memory.
+at most four translation models so English pivoting has bounded memory.
 """
 from __future__ import annotations
 import os
@@ -40,7 +40,7 @@ def chunks(text,limit=600):
     return result
 
 
-@lru_cache(maxsize=2)
+@lru_cache(maxsize=4)
 def model(path,revision):
     import ctranslate2
     folder=Path(path)/'model'
@@ -49,6 +49,13 @@ def model(path,revision):
     # CTranslate2 opens Unicode paths on supported Windows builds. SentencePiece
     # alone needs serialized loading; keep native model IO on its standard path.
     return ctranslate2.Translator(str(folder),**kwargs)
+
+
+
+@lru_cache(maxsize=4)
+def sentencepiece_processor(path, size, modified):
+    import sentencepiece as spm
+    return spm.SentencePieceProcessor(model_proto=Path(path).read_bytes())
 
 
 def translate(text,source,target):
@@ -61,8 +68,9 @@ def translate(text,source,target):
             pkg=installed[pair]
             # SentencePiece can load serialized bytes without native path encoding.
             if hasattr(pkg.tokenizer,'model_file') and str(pkg.tokenizer.model_file).endswith('.model') and type(pkg.tokenizer).__name__=='SentencePieceTokenizer':
-                import sentencepiece as spm
-                pkg.tokenizer.processor=spm.SentencePieceProcessor(model_proto=Path(pkg.tokenizer.model_file).read_bytes())
+                tokenizer_path=Path(pkg.tokenizer.model_file)
+                signature=tokenizer_path.stat()
+                pkg.tokenizer.processor=sentencepiece_processor(str(tokenizer_path),signature.st_size,signature.st_mtime_ns)
             segments=chunks(value)
             tokenized=[pkg.tokenizer.encode(s) for s in segments]
             prefix=[[pkg.target_prefix]]*len(tokenized) if pkg.target_prefix else None

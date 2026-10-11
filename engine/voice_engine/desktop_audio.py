@@ -70,6 +70,9 @@ def run_audio_session(url: str, token: str, source: str, target: str,
                         else:
                             data = json.loads(message)
                             if data.get("type") == "translated":
+                                if data.get("stage_seconds"):
+                                    stages=data["stage_seconds"]
+                                    log("زمن المراحل بالثواني: تعرف="+str(stages.get("asr"))+"، ترجمة="+str(stages.get("translation"))+"، نطق="+str(stages.get("tts"))+"، تحويل="+str(stages.get("conversion")))
                                 log(f"زمن المعالجة: {data.get('processing_seconds', 'غير متاح')} ثانية بعد مقطع {data.get('chunk_seconds', 3.2)} ثانية")
                                 log("النص الأصلي: " + str(data.get("original_text", ""))[:280])
                                 log("الترجمة: " + str(data.get("translated_text", ""))[:280])

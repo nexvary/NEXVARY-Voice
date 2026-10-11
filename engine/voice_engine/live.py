@@ -13,7 +13,7 @@ import wave
 from functools import lru_cache
 from pathlib import Path
 
-from .speech import WhisperASR, cached_asr, PiperTTS, AudioBackendUnavailable, run_checked
+from .speech import WhisperASR, cached_asr, PiperTTS, AudioBackendUnavailable
 from .translator import ArgosTranslator, Translator, TranslationUnavailable
 
 SAMPLE_RATE = 16000
@@ -32,6 +32,22 @@ def pcm_rms(pcm: bytes) -> float:
     import struct
     total = sum(sample * sample for (sample,) in struct.iter_unpack("<h", pcm))
     return math.sqrt(total / (len(pcm) // 2))
+
+
+def wav_to_pcm(path: Path) -> bytes:
+    """Resample inside the already installed PyAV runtime; no child process."""
+    import av
+    resampler=av.AudioResampler(format='s16',layout='mono',rate=SAMPLE_RATE)
+    output=bytearray()
+    with av.open(str(path)) as audio:
+        for frame in audio.decode(audio=0):
+            for converted in resampler.resample(frame):
+                output.extend(converted.to_ndarray().astype('<i2',copy=False).tobytes())
+                if len(output)>16*1024*1024: raise AudioBackendUnavailable('Synthesized audio exceeds live reply limit')
+        for converted in resampler.resample(None):
+            output.extend(converted.to_ndarray().astype('<i2',copy=False).tobytes())
+    if not output: raise AudioBackendUnavailable('Empty synthesized PCM')
+    return bytes(output)
 
 
 class LiveAudioProcessor:
@@ -55,30 +71,34 @@ class LiveAudioProcessor:
                 audio.setsampwidth(BYTES_PER_SAMPLE)
                 audio.setframerate(SAMPLE_RATE)
                 audio.writeframes(pcm)
+            stage=time.monotonic()
             segments = self.recognizer.transcribe(original, source)
+            asr_seconds=time.monotonic()-stage
             transcript = " ".join(part.text.strip() for part in segments).strip()
             if not transcript:
                 return None
+            stage=time.monotonic()
             translated = self.translator.translate(transcript, source, target).strip()
+            translation_seconds=time.monotonic()-stage
             if not translated:
                 raise TranslationUnavailable("Empty translation")
             track = folder / "voice.wav"
+            stage=time.monotonic()
             self.synthesizer.synthesize(translated, target, track)
+            tts_seconds=time.monotonic()-stage
             if not track.is_file():
                 raise AudioBackendUnavailable("No synthesized audio produced")
-            raw = folder / "voice.pcm"
-            run_checked(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-                         "-i", str(track), "-f", "s16le", "-acodec", "pcm_s16le",
-                         "-ar", "16000", "-ac", "1", str(raw)])
-            audio_pcm = raw.read_bytes()
-            if not audio_pcm:
-                raise AudioBackendUnavailable("Empty synthesized PCM")
+            stage=time.monotonic()
+            audio_pcm = wav_to_pcm(track)
+            conversion_seconds=time.monotonic()-stage
             # The audio reply follows the JSON metadata as one binary WebSocket frame.
             return {"type": "translated", "original_text": transcript,
                     "translated_text": translated,
                     "source_language": source, "target_language": target,
                     "processing_seconds": round(time.monotonic() - started, 3),
                     "chunk_seconds": len(pcm) / (SAMPLE_RATE * BYTES_PER_SAMPLE),
+                    "stage_seconds": {"asr":round(asr_seconds,3),"translation":round(translation_seconds,3),
+                                      "tts":round(tts_seconds,3),"conversion":round(conversion_seconds,3)},
                     "pcm_bytes": len(audio_pcm)}, audio_pcm
 
 
