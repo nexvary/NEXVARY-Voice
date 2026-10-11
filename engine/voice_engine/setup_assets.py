@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 from .downloads import fetch_verified
+from .asset_inventory import voice_map
 
 CODES = ("ar", "en", "it", "ru", "es", "bn")
 VOICES = {
@@ -115,11 +116,7 @@ def install_voices() -> None:
     if len(raw) > 5 * 1024 * 1024:
         raise RuntimeError("فهرس الأصوات أكبر من الحد المسموح.")
     metadata = json.loads(raw.decode("utf-8"))
-    try:
-        mapping = json.loads((root / "voices.json").read_text(encoding="utf-8"))
-    except (ValueError, OSError):
-        mapping = {}
-    if not isinstance(mapping, dict): mapping = {}
+    mapping = voice_map(root)
     failures = []
     for index, (lang, model_id) in enumerate(VOICES.items(), 1):
         say(f"[{index}/{len(VOICES)}] فحص صوت {lang} ({model_id})")
@@ -128,6 +125,11 @@ def install_voices() -> None:
         except RuntimeError as exc:
             failures.append(lang + ": " + str(exc))
             say("FAILED: " + failures[-1])
+            continue
+        existing = mapping.get(lang)
+        voice_files = [(rel,rec) for rel,rec in entries if rel.endswith(('.onnx','.onnx.json'))]
+        if existing and all(verified_file(Path(existing + ('.json' if rel.endswith('.json') else '')),rec) for rel,rec in voice_files):
+            say('تم التحقق من صوت موجود مسبقًا دون إعادة تنزيل: ' + lang)
             continue
         for relative, record in entries:
             filename = Path(relative).name

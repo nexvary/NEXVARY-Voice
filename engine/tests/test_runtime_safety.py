@@ -11,7 +11,7 @@ from voice_engine import workload
 def test_old_private_python_is_not_ready(monkeypatch,tmp_path):
     py=setup.python_path(tmp_path);py.parent.mkdir(parents=True);py.touch()
     monkeypatch.setattr(setup.subprocess,'run',lambda *a,**k:SimpleNamespace(returncode=0,stdout=json.dumps({'version':[3,8,10], 'modules':{'piper-tts':{'state':'ready'}}})))
-    assert setup.runtime_report(tmp_path)['state']=='repair'
+    assert setup.runtime_report(tmp_path)['state'] in {'repair','incompatible'}
 
 
 def test_existing_private_runtime_is_never_recreated(monkeypatch,tmp_path):

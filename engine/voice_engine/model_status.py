@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
+from .asset_inventory import voice_map
 
 CODES = ("ar", "en", "it", "ru", "es", "bn")
 
@@ -15,12 +16,7 @@ def installed_pairs() -> set[tuple[str, str]]:
 def report(voices_path: Path | None = None) -> dict:
     pairs = installed_pairs()
     voices_path = voices_path or Path("voices.json")
-    try:
-        voices = json.loads(voices_path.read_text(encoding="utf-8")) if voices_path.is_file() else {}
-    except (ValueError, OSError):
-        voices = {}
-    if not isinstance(voices, dict):
-        voices = {}
+    voices = voice_map(voices_path.parent)
     states = {}
     def path_available(source, target):
         if source == target: return True

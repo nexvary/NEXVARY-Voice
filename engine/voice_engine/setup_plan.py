@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import urllib.request
 from pathlib import Path
+from .asset_inventory import voice_map
 from .setup_assets import REGISTRY, VOICES, model_entries, verified_file
 
 INDEX = 'https://raw.githubusercontent.com/argosopentech/argospm-index/main/index.json'
@@ -38,6 +39,7 @@ def build_plan(state: dict, root: Path, mode='all') -> dict:
         missing.append('نماذج Argos: عشرة اتجاهات عبر الإنجليزية؛ أحجام غير معلنة في الفهرس')
         licenses.append('Argos Translate: MIT/CC0. تراخيص النماذج قد تختلف؛ راجع بيانات الحزمة والفهرس الرسمي: ' + INDEX)
     if mode in {'all','voices'}:
+        installed_voices = voice_map(root)
         registry = json.loads(read_https(REGISTRY + '/voices.json'))
         for code,name in VOICES.items():
             try:
@@ -50,6 +52,10 @@ def build_plan(state: dict, root: Path, mode='all') -> dict:
                         licenses.append(code + ' — ' + name + '\n' + card)
                         filename = 'MODEL_CARD-'+code+'.txt'
                     target = root/'models'/'voices'/code/filename
+                    existing = installed_voices.get(code)
+                    if existing and filename.endswith(('.onnx','.onnx.json')):
+                        possible = Path(existing + ('.json' if filename.endswith('.json') else ''))
+                        if verified_file(possible,record): target=possible
                     if not verified_file(target,record): needed += record['size_bytes']
                 if needed:
                     voice_bytes += needed

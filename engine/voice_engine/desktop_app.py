@@ -213,7 +213,7 @@ class VoiceWindow(QMainWindow):
         back = button("رجوع", "swap", primary=False)
         back.clicked.connect(self._back)
         side.addWidget(back)
-        side.addWidget(title("DESKTOP EDITION  •  v0.5.1", muted=True, point=10))
+        side.addWidget(title("DESKTOP EDITION  •  v0.5.2", muted=True, point=10))
         side.addWidget(title("Windows 10 / 11", muted=True, point=10))
 
         main = QFrame()
@@ -586,10 +586,18 @@ class VoiceWindow(QMainWindow):
 
     def _language_result(self, data):
         states = (data.get('model_details') or {}).get('languages',{})
+        functional = data.get('functional_tests',{})
         for code,label in self.language_rows.items():
             state = states.get(code)
             if state:
-                label.setText(('مسار ترجمة مثبت في الاتجاهين' if state['to_english'] and state['from_english'] else 'مسار ترجمة ناقص') + ' | ' + state.get('voice_reason','') + ' | يلزم اختبار وظيفي')
+                translations=functional.get('translations',{})
+                results=translations.get('data',{})
+                directions=[v for k,v in results.items() if code in k.split('->')]
+                translation_ok=len(directions)==10 and all(v.get('state')=='ready' for v in directions) and translations.get('current_assets_unchanged')
+                voice_result=functional.get('voices',{})
+                voice_ok=voice_result.get('current_assets_unchanged') and voice_result.get('data',{}).get(code,{}).get('state')=='ready'
+                label.setText(('الترجمة: اجتازت الاختبار' if translation_ok else 'الترجمة: نموذج موجود ويحتاج اختبارًا' if state['to_english'] and state['from_english'] else 'الترجمة: مسار ناقص') + ' | ' + ('الصوت: اجتاز توليد WAV' if voice_ok else state.get('voice_reason','يحتاج فحصًا')))
+
             else: label.setText('لم يُعثر على تقرير لهذه اللغة؛ لا تُعتبر جاهزة.')
 
     def _sample(self, code):

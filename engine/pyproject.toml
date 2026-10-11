@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexvary-voice-engine"
-version = "0.5.1"
+version = "0.5.2"
 description = "NEXVARY Voice translation API and subtitle tools"
 requires-python = ">=3.11"
 dependencies = [

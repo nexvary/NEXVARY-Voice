@@ -18,8 +18,10 @@ import zipfile
 from pathlib import Path
 from .diagnostics import system_probes, inspect_binary
 from .downloads import fetch_verified, digest_file
+from .asset_inventory import voice_map, functional_report
 
 LANG_CODES = ("ar", "en", "it", "ru", "es", "bn")
+RUNTIME_VERSIONS = {"faster-whisper":"1.2.1", "argostranslate":"1.11.0", "piper-tts":"1.8.0", "nexvary-voice-engine":"0.5.2"}
 WHISPER_SIZE = {"tiny", "base", "small"}
 FFMPEG_URL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -74,14 +76,8 @@ def setup_environment(base: Path | None = None) -> dict[str, str]:
     pair = ffmpeg_pair(dest)
     for executable in pair:
         if executable: env['PATH'] = str(Path(executable).parent) + os.pathsep + env['PATH']
-    voice_file = dest / "voices.json"
-    if voice_file.exists():
-        try:
-            voices = json.loads(voice_file.read_text(encoding="utf-8-sig"))
-            if isinstance(voices, dict):
-                env["NEXVARY_PIPER_VOICES"] = json.dumps(voices)
-        except (ValueError, OSError):
-            pass
+    voices = voice_map(dest)
+    if voices: env['NEXVARY_PIPER_VOICES'] = json.dumps(voices)
     return env
 
 
@@ -202,7 +198,8 @@ def detect(base: Path | None = None) -> dict:
         "translation_ready": bool(model and model.get("translation_ready")),
         "voices_ready": bool(model and model.get("piper_ready")),
         "whisper_cached": whisper_present,
-        "model_details": model,
+        "model_details": model, "functional_tests": functional_report(dest),
+        "discovered_voices":voice_map(dest),
     }
 
 
@@ -337,7 +334,10 @@ print(json.dumps(result))
         data = json.loads(result.stdout)
         okay = result.returncode == 0 and data["version"][:2] == [3, 11]
         okay = okay and all(v["state"] == "ready" for v in data["modules"].values())
-        data.update(state="ready" if okay else "repair", reason="تم استيراد المكونات والتحقق من Python 3.11." if okay else "بيئة المعالجة موجودة لكن أحد المكونات غير متوافق أو ناقص.")
+        mismatched = [name for name,version in RUNTIME_VERSIONS.items() if data['modules'].get(name,{}).get('version') != version]
+        okay = okay and not mismatched
+        data['incompatible_components'] = mismatched
+        data.update(state="ready" if okay else "incompatible" if mismatched else "repair", reason=("تم استيراد المكونات والتحقق من Python 3.11." if okay else "تحتاج البيئة تحديثًا أو إصلاحًا: " + ", ".join(mismatched) if mismatched else "بيئة المعالجة ناقصة أو غير صالحة."))
         return data
     except (OSError, ValueError, KeyError, subprocess.SubprocessError):
         return {"state": "failed", "reason": "تعذر اختبار Runtime؛ قد تكون البيئة ناقصة أو تالفة."}
