@@ -49,8 +49,11 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          & .\dist\NEXVARY-Voice\NEXVARY-Voice.exe --self-test
-          if ($LASTEXITCODE -ne 0) { throw "Windows executable smoke test failed" }
+          $exe = (Resolve-Path ".\dist\NEXVARY-Voice\NEXVARY-Voice.exe").Path
+          # GUI-subsystem apps launched with & can return before process completion.
+          $proc = Start-Process -FilePath $exe -ArgumentList "--self-test" -Wait -PassThru
+          Write-Host "Frozen GUI smoke exit: $($proc.ExitCode)"
+          if ($proc.ExitCode -ne 0) { throw "Windows executable smoke test failed: $($proc.ExitCode)" }
       - name: Locate Inno Setup compiler
         id: inno
         shell: pwsh
