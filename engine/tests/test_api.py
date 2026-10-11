@@ -7,7 +7,8 @@ def test_health():
     with TestClient(app) as client:
         r = client.get("/health")
         assert r.status_code == 200
-        assert r.json()["audio_streaming"] is False
+        assert r.json()["audio_streaming"] is True
+        assert r.json()["protocol"] == "segmented_pcm16_speech_turns"
 
 
 def test_two_way_translation(fake_engine):
