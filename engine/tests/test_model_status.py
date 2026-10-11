@@ -17,8 +17,8 @@ def test_all_ten_pairs_and_voice_configuration(monkeypatch, tmp_path):
     voices = {}
     for code in model_status.CODES:
         model = tmp_path / (code + ".onnx")
-        model.write_bytes(b"fixture")
-        (tmp_path / (code + ".onnx.json")).write_text("{}")
+        model.write_bytes(b"fixture" * 300)
+        (tmp_path / (code + ".onnx.json")).write_text(json.dumps({"audio":{"sample_rate":22050},"phoneme_id_map":{"a":[1]}}))
         voices[code] = str(model)
     settings = tmp_path / "voices.json"
     settings.write_text(json.dumps(voices), encoding="utf-8")

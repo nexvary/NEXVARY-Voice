@@ -12,11 +12,11 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from .dubbing import dub_video
-from .speech import PiperTTS, WhisperASR
+from .dubbing import dub_video, probe_streams, cancellable_runner
+from .speech import PiperTTS, WhisperASR, cached_asr
 from .translator import ArgosTranslator
 
 MAX_UPLOAD_BYTES = 80 * 1024 * 1024
@@ -36,9 +36,14 @@ class Job:
     finished_at: float | None = None
     error: str = ""
     output: Path | None = None
+    cancel_requested: threading.Event = field(default_factory=threading.Event)
+    phase: str = 'queued'
+    completed_segments: int = 0
+    total_segments: int | None = None
 
     def view(self) -> dict:
-        return {"job_id": self.job_id, "status": self.status,
+        return {"job_id": self.job_id, "status": self.status, "phase":self.phase,
+                "completed_segments":self.completed_segments, "total_segments":self.total_segments,
                 "error": self.error, "source_language": self.source,
                 "target_language": self.target,
                 "download_ready": self.status == "complete" and
@@ -56,7 +61,7 @@ class JobQueue:
         now = time.time()
         with self._guard:
             for name, job in list(self._jobs.items()):
-                if job.status not in {"complete", "failed"}:
+                if job.status not in {"complete", "failed", "cancelled"}:
                     continue
                 if job.finished_at is None or now - job.finished_at < RETENTION_SECONDS:
                     continue
@@ -103,34 +108,50 @@ class JobQueue:
         if job:
             shutil.rmtree(job.workdir, ignore_errors=True)
 
+    def cancel(self, identifier: str) -> bool:
+        with self._guard:
+            job = self._jobs.get(identifier)
+            if job is None: return False
+            if job.status not in {'queued','running'}: return True
+            job.cancel_requested.set()
+            if job.status == 'queued':
+                job.status = 'cancelled'; job.finished_at = time.time()
+            return True
+
     def _execute(self, identifier: str) -> None:
         with self._guard:
             job = self._jobs.get(identifier)
-            if job is None:
+            if job is None or job.cancel_requested.is_set():
                 return
             job.status = "running"
+        self._context = getattr(self, "_context", threading.local())
+        self._context.job = job
         try:
             result_path = job.workdir / "dubbed.mp4"
             self._perform(job.workdir / "source.mp4", result_path, job.source, job.target)
             with self._guard:
+                if job.cancel_requested.is_set(): raise RuntimeError("تم إلغاء الدبلجة.")
                 job.output = result_path
                 job.status = "complete"
                 job.finished_at = time.time()
         except Exception as exc:
             with self._guard:
                 job.error = f"{type(exc).__name__}: {str(exc)[:180]}"
-                job.status = "failed"
+                job.status = "cancelled" if job.cancel_requested.is_set() else "failed"
                 job.finished_at = time.time()
 
     def _perform(self, input_path: Path, output_path: Path,
                  source: str, target: str) -> None:
-        asr = WhisperASR(
-            os.getenv("NEXVARY_WHISPER_MODEL", "small"),
-            allow_download=False,
-            device=os.getenv("NEXVARY_ASR_DEVICE", "cpu")
-        )
-        dub_video(input_path, output_path, source, target, asr,
-                  ArgosTranslator(), PiperTTS())
+        from .workload import exclusive
+        job = self._context.job
+        def progress(phase,done,total):
+            with self._guard:
+                job.phase = phase; job.completed_segments = done; job.total_segments = total
+        with exclusive('video'):
+            asr = cached_asr(os.getenv('NEXVARY_WHISPER_MODEL','base'),os.getenv('NEXVARY_ASR_DEVICE','cpu'))
+            dub_video(input_path,output_path,source,target,asr,ArgosTranslator(),PiperTTS(),
+                      runner=cancellable_runner(job.cancel_requested.is_set),
+                      cancelled=job.cancel_requested.is_set, progress=progress, output_probe=probe_streams)
 
 
 _default_queue: JobQueue | None = None

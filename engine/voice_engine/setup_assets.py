@@ -13,6 +13,7 @@ import sys
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from .downloads import fetch_verified
 
 CODES = ("ar", "en", "it", "ru", "es", "bn")
 VOICES = {
@@ -55,9 +56,10 @@ def install_translations() -> None:
 
 def install_whisper() -> None:
     from faster_whisper import WhisperModel
-    say("تهيئة Whisper base متعدد اللغات للمعالج CPU. قد يستغرق التنزيل بعض الوقت.")
-    WhisperModel("base", device="cpu", compute_type="int8", local_files_only=False)
-    say("اكتمل فحص وتحميل Whisper base.")
+    model = os.getenv("NEXVARY_WHISPER_MODEL", "base")
+    say(f"تهيئة Whisper {model} متعدد اللغات للمعالج CPU. قد يستغرق التنزيل بعض الوقت.")
+    WhisperModel(os.getenv("NEXVARY_WHISPER_MODEL", "base"), device="cpu", compute_type="int8", local_files_only=False, cpu_threads=max(1, min(4, (os.cpu_count() or 2)//2)))
+    say("اكتمل تحميل واختبار تحميل Whisper " + model)
 
 
 def model_entries(metadata: dict, name: str) -> list[tuple[str, dict]]:
@@ -91,33 +93,14 @@ def verified_file(path: Path, record: dict) -> bool:
 
 
 def download_blob(relative: str, record: dict, path: Path) -> None:
-    """Fixed registry path, bounded streaming, verify upstream size+MD5."""
-    if not relative or ".." in Path(relative.replace("\\", "/")).parts:
+    if not relative or relative.startswith(("/", "\\")) or ".." in Path(relative.replace("\\", "/")).parts:
         raise RuntimeError("مسار غير صالح في فهرس نماذج Piper")
-    uri = REGISTRY + "/" + urllib.parse.quote(relative, safe="/")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    staging = path.with_name(path.name + ".partial")
-    if staging.exists():
-        staging.unlink()
-    try:
-        req = urllib.request.Request(uri, headers={"User-Agent": "NEXVARY-Voice/0.5"})
-        size = int(record["size_bytes"])
-        with urllib.request.urlopen(req, timeout=40) as source, staging.open("xb") as output:
-            total = 0
-            while True:
-                data = source.read(1024 * 1024)
-                if not data:
-                    break
-                total += len(data)
-                if total > size:
-                    raise RuntimeError("تم رفض ملف صوت أكبر من حجمه المعلن.")
-                output.write(data)
-        if not verified_file(staging, record):
-            raise RuntimeError("فشل التحقق من سلامة ملف النموذج بعد التنزيل.")
-        os.replace(staging, path)
-    finally:
-        if staging.exists():
-            staging.unlink()
+    def progress(done, total):
+        print("PROGRESS:" + json.dumps({"component": path.name, "bytes": done, "total": total}), flush=True)
+    fetch_verified(REGISTRY + "/" + urllib.parse.quote(relative, safe="/"), path,
+                   expected_digest=record["md5_digest"], algorithm="md5",
+                   expected_size=record["size_bytes"], maximum=180 * 1024 * 1024,
+                   progress=progress)
 
 
 def install_voices() -> None:
@@ -132,10 +115,21 @@ def install_voices() -> None:
     if len(raw) > 5 * 1024 * 1024:
         raise RuntimeError("فهرس الأصوات أكبر من الحد المسموح.")
     metadata = json.loads(raw.decode("utf-8"))
-    mapping: dict[str, str] = {}
+    try:
+        mapping = json.loads((root / "voices.json").read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        mapping = {}
+    if not isinstance(mapping, dict): mapping = {}
+    failures = []
     for index, (lang, model_id) in enumerate(VOICES.items(), 1):
         say(f"[{index}/{len(VOICES)}] فحص صوت {lang} ({model_id})")
-        for relative, record in model_entries(metadata, model_id):
+        try:
+            entries = model_entries(metadata, model_id)
+        except RuntimeError as exc:
+            failures.append(lang + ": " + str(exc))
+            say("FAILED: " + failures[-1])
+            continue
+        for relative, record in entries:
             filename = Path(relative).name
             if filename == "MODEL_CARD":
                 filename = "MODEL_CARD-" + lang + ".txt"
@@ -149,11 +143,15 @@ def install_voices() -> None:
             raise RuntimeError("الصوت المثبت غير مكتمل: " + lang)
         json.loads(config.read_text(encoding="utf-8"))
         mapping[lang] = str(voice.resolve())
+        stage = root / "voices.json.partial"
+        stage.write_text(json.dumps(mapping, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(stage, root / "voices.json")
     dest = root / "voices.json"
     stage = dest.with_name("voices.json.partial")
     stage.write_text(json.dumps(mapping, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(stage, dest)
-    say("اكتملت أصوات Piper الست. راجع تراخيص MODEL_CARD.")
+    if failures: raise RuntimeError("لم تكتمل الأصوات: " + "; ".join(failures))
+    say("اكتمل تنزيل الأصوات؛ جاري التحقق الوظيفي من التوليد.")
 
 
 def main():

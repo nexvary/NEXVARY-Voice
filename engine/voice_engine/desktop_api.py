@@ -165,3 +165,19 @@ class DesktopAPI:
         finally:
             if temp.exists():
                 temp.unlink()
+
+
+    def models(self):
+        return self._request('GET','/v1/models/status',timeout=60).json()
+
+    def cancel_video(self,job_id):
+        if not job_id or len(job_id)>80 or '/' in job_id: raise ClientError('رقم مهمة غير صالح.')
+        return self._request('POST','/v1/dub/jobs/'+job_id+'/cancel').json()
+
+    def download_subtitles(self,job_id,target):
+        if not job_id or len(job_id)>80 or '/' in job_id: raise ClientError('رقم مهمة غير صالح.')
+        response = self._request('GET','/v1/dub/jobs/'+job_id+'/subtitles')
+        path = Path(target)
+        if path.exists(): raise ClientError('اختر اسم ملف جديدًا؛ الملف موجود بالفعل.')
+        with path.open('x',encoding='utf-8') as output: output.write(response.content.decode('utf-8-sig'))
+        return path

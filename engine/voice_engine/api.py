@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .translator import ArgosTranslator, TranslationUnavailable, Translator
 
-app = FastAPI(title="NEXVARY Voice Engine", version="0.3.0", docs_url="/docs")
+app = FastAPI(title="NEXVARY Voice Engine", version="0.5.1", docs_url="/docs")
 
 LANGUAGES = {
     "ar": "Arabic", "en": "English", "hi": "Hindi", "tr": "Turkish",
@@ -193,13 +193,16 @@ async def live_audio(websocket: WebSocket):
         buffer = bytearray()
         async def handle(chunk: bytes) -> None:
             try:
-                translated = await run_in_threadpool(processor.process, chunk, source, target)
+                def run_chunk():
+                    from .workload import exclusive
+                    with exclusive('live-audio'): return processor.process(chunk, source, target)
+                translated = await run_in_threadpool(run_chunk)
                 if translated is None:
                     return
                 meta, pcm = translated
                 await websocket.send_json(meta)
                 await websocket.send_bytes(pcm)
-            except (AudioBackendUnavailable, TranslationUnavailable, ValueError) as exc:
+            except (AudioBackendUnavailable, TranslationUnavailable, ValueError, RuntimeError) as exc:
                 await websocket.send_json({"type": "error", "message": str(exc)[:180]})
 
         while True:
@@ -308,3 +311,25 @@ def video_job_delete(job_id: str):
     if not deleted:
         raise HTTPException(404, detail="Unknown video job")
     return {"deleted": True}
+
+
+@app.get('/v1/models/status', dependencies=[Depends(require_token)])
+def model_readiness():
+    from .model_status import report
+    return report()
+
+
+@app.get('/v1/dub/jobs/{job_id}/subtitles', dependencies=[Depends(require_token)])
+def video_subtitles(job_id: str):
+    job = get_job_queue().get(job_id)
+    if job is None: raise HTTPException(404,detail='Unknown video job')
+    if job.status != 'complete' or job.output is None: raise HTTPException(409,detail='Dubbing not complete')
+    path = job.output.with_suffix('.srt')
+    if not path.is_file(): raise HTTPException(404,detail='Subtitles unavailable')
+    return FileResponse(path,media_type='application/x-subrip',filename='NEXVARY-Dubbed.srt')
+
+
+@app.post('/v1/dub/jobs/{job_id}/cancel', dependencies=[Depends(require_token)])
+def video_cancel(job_id: str):
+    if not get_job_queue().cancel(job_id): raise HTTPException(404,detail='Unknown video job')
+    return {'cancel_requested':True}

@@ -6,13 +6,14 @@ ASR/MT/TTS latency; 16 kHz signed little-endian mono. No transcript persistence.
 from __future__ import annotations
 
 import math
+import time
 import os
 import tempfile
 import wave
 from functools import lru_cache
 from pathlib import Path
 
-from .speech import WhisperASR, PiperTTS, AudioBackendUnavailable, run_checked
+from .speech import WhisperASR, cached_asr, PiperTTS, AudioBackendUnavailable, run_checked
 from .translator import ArgosTranslator, Translator, TranslationUnavailable
 
 SAMPLE_RATE = 16000
@@ -41,6 +42,7 @@ class LiveAudioProcessor:
 
     def process(self, pcm: bytes, source: str, target: str):
         """Returns (metadata, translated PCM) or None for quiet input."""
+        started = time.monotonic()
         if len(pcm) < MIN_CHUNK_BYTES or len(pcm) > CHUNK_BYTES:
             raise ValueError("Chunk exceeds permitted audio size")
         if pcm_rms(pcm) < 170:
@@ -75,6 +77,8 @@ class LiveAudioProcessor:
             return {"type": "translated", "original_text": transcript,
                     "translated_text": translated,
                     "source_language": source, "target_language": target,
+                    "processing_seconds": round(time.monotonic() - started, 3),
+                    "chunk_seconds": len(pcm) / (SAMPLE_RATE * BYTES_PER_SAMPLE),
                     "pcm_bytes": len(audio_pcm)}, audio_pcm
 
 
@@ -82,6 +86,6 @@ class LiveAudioProcessor:
 def get_live_processor() -> LiveAudioProcessor:
     model = os.getenv("NEXVARY_WHISPER_MODEL", "small")
     return LiveAudioProcessor(
-        WhisperASR(model, allow_download=False, device=os.getenv("NEXVARY_ASR_DEVICE", "cpu")),
+        cached_asr(model, os.getenv("NEXVARY_ASR_DEVICE", "cpu")),
         ArgosTranslator(), PiperTTS()
     )

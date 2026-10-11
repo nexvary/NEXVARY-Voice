@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexvary-voice-engine"
-version = "0.1.0"
+version = "0.5.1"
 description = "NEXVARY Voice translation API and subtitle tools"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115,<1.0",
     "uvicorn>=0.30,<1.0",
     "python-multipart>=0.0.18,<1.0",
+    "websockets>=14,<17",
 ]
 
 [project.optional-dependencies]
@@ -18,7 +19,7 @@ offline = ["argostranslate>=1.9,<2.0"]
 dev = ["pytest>=8,<10", "httpx>=0.27,<1.0"]
 speech = ["faster-whisper>=1.1,<2.0", "piper-tts>=1.2,<2.0"]
 cloud = ["edge-tts>=7,<9"]
-desktop = ["sounddevice>=0.5,<1.0", "websockets>=14,<17", "PySide6>=6.8,<7.0", "httpx>=0.27,<1.0"]
+desktop = ["psutil>=5.9,<8", "sounddevice>=0.5,<1.0", "websockets>=14,<17", "PySide6==6.8.3", "httpx>=0.27,<1.0"]
 
 [tool.setuptools.packages.find]
 include = ["voice_engine*"]

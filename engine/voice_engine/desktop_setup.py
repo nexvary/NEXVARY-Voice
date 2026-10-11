@@ -16,6 +16,8 @@ import sys
 import urllib.request
 import zipfile
 from pathlib import Path
+from .diagnostics import system_probes, inspect_binary
+from .downloads import fetch_verified, digest_file
 
 LANG_CODES = ("ar", "en", "it", "ru", "es", "bn")
 WHISPER_SIZE = {"tiny", "base", "small"}
@@ -55,9 +57,18 @@ def setup_environment(base: Path | None = None) -> dict[str, str]:
     env["UV_NO_PROGRESS"] = "1"
     env["ARGOS_PACKAGES_DIR"] = str(dest / "argos")
     env["HF_HOME"] = str(dest / "huggingface")
-    env["NEXVARY_WHISPER_MODEL"] = "base"
+    env["NEXVARY_WHISPER_MODEL"] = load_preferences(dest).get("whisper_model", "base")
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+    env["UV_PYTHON_INSTALL_BIN"] = "0"
+    env["UV_PYTHON_INSTALL_REGISTRY"] = "0"
+    env["OMP_NUM_THREADS"] = str(max(1, min(4, (os.cpu_count() or 2) // 2)))
+    env["ARGOS_DEVICE_TYPE"] = "cpu"
     env["NEXVARY_ASR_DEVICE"] = "cpu"
     env["PATH"] = str(binaries(dest)) + os.pathsep + str(python_path(dest).parent) + os.pathsep + env.get("PATH", "")
+    pair = ffmpeg_pair(dest)
+    for executable in pair:
+        if executable: env['PATH'] = str(Path(executable).parent) + os.pathsep + env['PATH']
     voice_file = dest / "voices.json"
     if voice_file.exists():
         try:
@@ -95,7 +106,13 @@ def ffmpeg_pair(base: Path | None = None) -> tuple[str | None, str | None]:
     p = b / "ffprobe.exe"
     if a.is_file() and p.is_file():
         return str(a), str(p)
-    return shutil.which("ffmpeg"), shutil.which("ffprobe")
+    ffmpeg, ffprobe = shutil.which('ffmpeg'), shutil.which('ffprobe')
+    if ffmpeg and ffprobe: return ffmpeg, ffprobe
+    roots = [resources()/'bin', Path('C:/ffmpeg/bin'), Path('C:/Program Files/ffmpeg/bin')]
+    for root in roots:
+        a,p = root/'ffmpeg.exe',root/'ffprobe.exe'
+        if a.is_file() and p.is_file(): return str(a),str(p)
+    return ffmpeg,ffprobe
 
 
 def existing_system_python() -> Path | None:
@@ -150,21 +167,30 @@ def detect(base: Path | None = None) -> dict:
     try:
         import sounddevice as sd
         devices = sd.query_devices()
+        audio_reason = "تم تعداد أجهزة الصوت؛ يلزم اختبار التسجيل والاستماع."
         microphone = any(d["max_input_channels"] > 0 for d in devices)
         speakers = any(d["max_output_channels"] > 0 for d in devices)
     except Exception:
+        audio_reason = "تعذر تعداد أجهزة الصوت أو لم تُثبّت مكونات الصوت."
         microphone = speakers = False
     model = model_report(dest)
-    whisper_dir = dest / "huggingface" / "hub" / "models--Systran--faster-whisper-base"
+    whisper_dir = dest / "huggingface" / "hub" / ("models--Systran--faster-whisper-" + load_preferences(dest).get("whisper_model", "base"))
     whisper = whisper_dir / "snapshots"
     whisper_present = whisper.is_dir() and any(
         (child / "model.bin").is_file() for child in whisper.iterdir() if child.is_dir()
     )
+    probes = system_probes(dest, resources())
+    ffmpeg_status, ffprobe_status = inspect_binary(ffmpeg), inspect_binary(ffprobe)
+    runtime_details = runtime_report(dest)
     return {
+        "probes": probes, "ffmpeg_status": ffmpeg_status, "ffprobe_status": ffprobe_status,
+        "runtime_details": runtime_details,
+        "recommended_model": "tiny" if (memory_gb() or 4) < 6 or (os.cpu_count() or 2) < 4 else "base",
+        "selected_model": load_preferences(dest).get("whisper_model", "base"),
         "os": platform.platform(), "cpu": platform.processor() or platform.machine(),
         "cores": os.cpu_count(), "ram_gb": memory_gb(), "disk_free_gb": free,
-        "microphone": microphone, "speakers": speakers,
-        "ffmpeg": bool(ffmpeg), "ffprobe": bool(ffprobe),
+        "audio_reason":audio_reason, "microphone": microphone, "speakers": speakers,
+        "ffmpeg": ffmpeg_status["state"] == "ready", "ffprobe": ffprobe_status["state"] == "ready",
         "runtime": python_path(dest).is_file(),
         "system_python": str(existing_system_python() or ""),
         "uv_bundled": uv_path().is_file(),
@@ -187,8 +213,9 @@ def pipeline(base: Path | None = None) -> list[list[str]]:
     # Reuse a compatible interpreter if installed, but NEVER install packages
     # into the user's system Python. Always build a separate private venv.
     existing = existing_system_python()
-    commands = [] if existing else [[str(uv), "python", "install", "3.11"]]
-    commands.append([str(uv), "venv", "--python", str(existing or "3.11"), str(env.parent.parent)])
+    commands = [] if existing or env.is_file() else [[str(uv), "python", "install", "3.11"]]
+    if not env.is_file():
+        commands.append([str(uv), "venv", "--python", str(existing or "3.11"), str(env.parent.parent)])
     commands.append([str(uv), "pip", "install", "--python", str(env), str(src) + "[offline,speech]"])
     return commands
 
@@ -202,48 +229,43 @@ def model_command(kind: str, base: Path | None = None) -> list[str]:
     return [str(python), "-m", "voice_engine.setup_assets", kind]
 
 
-def download_ffmpeg(log, base: Path | None = None) -> None:
-    """Opt-in download; extract ONLY ffmpeg.exe/ffprobe.exe, bounded sizes."""
+def download_ffmpeg(log, base: Path | None = None, *, progress=None, cancelled=None) -> None:
+    """Validate upstream SHA-256 before extracting or running any binary."""
     dest = base or home()
     destination = binaries(dest)
     destination.mkdir(parents=True, exist_ok=True)
-    temporary = dest / "ffmpeg-download.partial"
-    if temporary.exists():
-        temporary.unlink()
-    try:
-        log("تنزيل FFmpeg من gyan.dev …")
-        request = urllib.request.Request(FFMPEG_URL, headers={"User-Agent": "NEXVARY-Voice/0.5"})
-        with urllib.request.urlopen(request, timeout=35) as source, temporary.open("xb") as sink:
-            total = 0
-            while True:
-                chunk = source.read(1024 * 1024)
-                if not chunk:
-                    break
-                total += len(chunk)
-                if total > 220 * 1024 * 1024:
-                    raise ValueError("FFmpeg download exceeds safe maximum")
-                sink.write(chunk)
-                if total % (20 * 1024 * 1024) < len(chunk):
-                    log(f"تم تحميل {total // (1024 * 1024)} MB")
-        with zipfile.ZipFile(temporary) as archive:
+    request = urllib.request.Request(FFMPEG_URL + ".sha256", headers={"User-Agent": "NEXVARY-Voice/0.5.1"})
+    with urllib.request.urlopen(request, timeout=20) as response:
+        if not response.geturl().startswith("https://"):
+            raise ValueError("Insecure checksum source")
+        checksum = response.read(4096).decode("ascii").strip().split()[0]
+    temporary = dest / "ffmpeg-download.zip"
+    log("تنزيل FFmpeg والتحقق من SHA-256 المنشور من المصدر …")
+    fetch_verified(FFMPEG_URL, temporary, expected_digest=checksum,
+                   progress=progress, cancelled=cancelled)
+    # Extract both to staging and test them before changing installed binaries.
+    with zipfile.ZipFile(temporary) as archive:
+        stages = []
+        try:
             for filename in ("ffmpeg.exe", "ffprobe.exe"):
+                if cancelled and cancelled():
+                    raise RuntimeError("تم إيقاف الإعداد.")
                 matches = [entry for entry in archive.infolist()
                            if entry.filename.replace("\\", "/").endswith("/bin/" + filename)]
                 if len(matches) != 1 or not 0 < matches[0].file_size < 180 * 1024 * 1024:
                     raise ValueError("Archive missing expected FFmpeg binaries")
-                out = destination / filename
-                stage = destination / (filename + ".partial")
-                try:
-                    with archive.open(matches[0]) as content, stage.open("wb") as target:
-                        shutil.copyfileobj(content, target, length=1024 * 1024)
-                    stage.replace(out)
-                finally:
-                    if stage.exists():
-                        stage.unlink()
-                log("تم تجهيز " + filename)
-    finally:
-        if temporary.exists():
-            temporary.unlink()
+                stage = destination / ("staged-" + filename)
+                stages.append((stage, destination / filename))
+                with archive.open(matches[0]) as content, stage.open("wb") as target:
+                    shutil.copyfileobj(content, target, length=1024 * 1024)
+                if inspect_binary(str(stage))["state"] != "ready":
+                    raise RuntimeError("فشل اختبار تشغيل " + filename)
+            for stage, output in stages:
+                stage.replace(output)
+                log("تم التحقق وتجهيز " + output.name)
+        finally:
+            for stage, _ in stages: stage.unlink(missing_ok=True)
+    temporary.unlink(missing_ok=True)
 
 
 def start_local_engine(base: Path | None = None) -> subprocess.Popen:
@@ -269,3 +291,112 @@ def start_local_engine(base: Path | None = None) -> subprocess.Popen:
     finally:
         log.close()
     return process
+
+
+def load_preferences(base: Path | None = None) -> dict:
+    try:
+        value = json.loads(((base or home()) / "preferences.json").read_text(encoding="utf-8"))
+        model = value.get("whisper_model", "base")
+        return {"whisper_model": model if model in WHISPER_SIZE else "base"}
+    except (ValueError, OSError, AttributeError):
+        return {"whisper_model": "base"}
+
+
+def save_preferences(model: str, base: Path | None = None):
+    if model not in WHISPER_SIZE: raise ValueError("Unsupported model")
+    dest = base or home()
+    dest.mkdir(parents=True, exist_ok=True)
+    stage = dest / "preferences.json.partial"
+    stage.write_text(json.dumps({"whisper_model": model}), encoding="utf-8")
+    stage.replace(dest / "preferences.json")
+
+
+def runtime_report(base: Path | None = None) -> dict:
+    dest = base or home()
+    py = python_path(dest)
+    if not py.is_file(): return {"state": "missing", "reason": "لا يوجد Runtime مستقل بعد."}
+    script = """import sys,json,importlib.metadata as m,importlib
+names={'faster-whisper':'faster_whisper','argostranslate':'argostranslate','piper-tts':'piper','nexvary-voice-engine':'voice_engine.api'}
+result={'version':list(sys.version_info[:3]),'modules':{}}
+for name,module in names.items():
+ try:
+  importlib.import_module(module)
+  result['modules'][name]={'version':m.version(name),'state':'ready'}
+ except Exception as exc: result['modules'][name]={'state':'repair','reason':type(exc).__name__}
+print(json.dumps(result))
+"""
+    try:
+        result = subprocess.run([str(py), "-c", script], cwd=dest, env=setup_environment(dest),
+                                capture_output=True, text=True, encoding="utf-8", timeout=45,
+                                creationflags=NO_WINDOW)
+        data = json.loads(result.stdout)
+        okay = result.returncode == 0 and data["version"][:2] == [3, 11]
+        okay = okay and all(v["state"] == "ready" for v in data["modules"].values())
+        data.update(state="ready" if okay else "repair", reason="تم استيراد المكونات والتحقق من Python 3.11." if okay else "بيئة المعالجة موجودة لكن أحد المكونات غير متوافق أو ناقص.")
+        return data
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+        return {"state": "failed", "reason": "تعذر اختبار Runtime؛ قد تكون البيئة ناقصة أو تالفة."}
+
+
+class EngineManager:
+    """Only terminate the process started by this application instance."""
+    def __init__(self):
+        self.process = None
+        self.last_state = 'stopped'
+
+    def health(self):
+        try:
+            with urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2) as response:
+                data = json.loads(response.read(4096))
+            return data.get('component') == 'voice-engine' and data.get('status') == 'ok'
+        except (OSError, ValueError): return False
+
+    def start(self):
+        import time
+        if self.process is not None and self.process.poll() is None:
+            if self.health(): return 'المحرك المحلي يعمل بالفعل.'
+            raise RuntimeError('المحرك المملوك للتطبيق ما زال يبدأ أو لا يستجيب؛ استخدم إعادة التشغيل.')
+        if self.health():
+            self.last_state = 'external'
+            return 'محرك NEXVARY محلي موجود بالفعل. يمكن الاتصال به؛ إيقافه يتم من البرنامج الذي بدأه.'
+        self.process = start_local_engine()
+        self.last_state = 'starting'
+        for _ in range(60):
+            if self.process.poll() is not None:
+                self.last_state = 'failed'
+                raise RuntimeError('توقف المحرك أثناء الإقلاع. راجع سجل المحرك من مركز التشخيص.')
+            if self.health():
+                self.last_state = 'running'
+                return 'المحرك جاهز ويستجيب على 127.0.0.1:8000.'
+            time.sleep(0.25)
+        self.stop()
+        raise RuntimeError('لم يستجب المحرك خلال مهلة الإقلاع.')
+
+    def stop(self):
+        if self.process is None:
+            return 'لا توجد عملية محرك مملوكة للتطبيق لإيقافها.'
+        if self.process.poll() is None:
+            self.process.terminate()
+            try: self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.process.kill(); self.process.wait(timeout=5)
+        self.process = None
+        self.last_state = 'stopped'
+        return 'تم إيقاف المحرك المحلي الذي بدأه التطبيق.'
+
+    def restart(self):
+        self.stop()
+        return self.start()
+
+    def metrics(self):
+        if self.process is None or self.process.poll() is not None:
+            return {'state':self.last_state, 'cpu_percent':None, 'ram_mb':None}
+        try:
+            import psutil
+            proc = psutil.Process(self.process.pid)
+            if getattr(self, '_metric_pid', None) != proc.pid:
+                self._metric_proc = proc; self._metric_pid = proc.pid
+            return {'state':self.last_state, 'cpu_percent':self._metric_proc.cpu_percent(),
+                    'ram_mb':round(proc.memory_info().rss/1024**2,1)}
+        except Exception:
+            return {'state':self.last_state,'cpu_percent':None,'ram_mb':None}

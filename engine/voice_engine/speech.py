@@ -7,6 +7,7 @@ import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from functools import lru_cache
 
 
 @dataclass(frozen=True)
@@ -32,7 +33,8 @@ class WhisperASR:
         try:
             self.model = WhisperModel(model, device=device,
                                       compute_type="int8" if device == "cpu" else "auto",
-                                      local_files_only=not allow_download)
+                                      local_files_only=not allow_download,
+                                      cpu_threads=max(1, min(4, (os.cpu_count() or 2)//2)), num_workers=1)
         except Exception as exc:
             raise AudioBackendUnavailable(
                 "Whisper model is unavailable locally. Use --allow-model-download or install it first."
@@ -50,7 +52,8 @@ def run_checked(argv: list[str], *, input_text: str | None = None,
     """Execute binary with argument list, no shell, and bounded time."""
     try:
         subprocess.run(argv, check=True, input=input_text, text=True,
-                       capture_output=True, timeout=timeout)
+                       capture_output=True, timeout=timeout,
+                       creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except FileNotFoundError as exc:
         raise AudioBackendUnavailable(f"Executable not installed: {argv[0]}") from exc
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
@@ -110,3 +113,8 @@ class EdgeTTS:
             raise AudioBackendUnavailable("Cloud TTS unavailable; check connectivity and provider") from exc
         if not target.is_file() or target.stat().st_size == 0:
             raise AudioBackendUnavailable("Cloud TTS produced no audio")
+
+
+@lru_cache(maxsize=1)
+def cached_asr(model: str, device: str = "cpu") -> WhisperASR:
+    return WhisperASR(model, allow_download=False, device=device)

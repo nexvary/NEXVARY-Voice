@@ -70,6 +70,7 @@ def run_audio_session(url: str, token: str, source: str, target: str,
                         else:
                             data = json.loads(message)
                             if data.get("type") == "translated":
+                                log(f"زمن المعالجة: {data.get('processing_seconds', 'غير متاح')} ثانية بعد مقطع {data.get('chunk_seconds', 3.2)} ثانية")
                                 log("النص الأصلي: " + str(data.get("original_text", ""))[:280])
                                 log("الترجمة: " + str(data.get("translated_text", ""))[:280])
                             elif data.get("type") == "error":

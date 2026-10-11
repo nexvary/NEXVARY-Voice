@@ -30,9 +30,9 @@ jobs:
           foreach ($script in @("tools/windows/setup-languages.ps1", "tools/windows/download-voices.ps1", "tools/windows/start-engine.ps1")) {
             $null = [scriptblock]::Create((Get-Content -Raw $script))
           }
-      - name: Desktop API tests
+      - name: All engine and graphical tests
         shell: pwsh
-        run: python -m pytest engine/tests/test_desktop_api.py -q
+        run: python -m pytest engine/tests -q --junitxml=build/test-results.xml
       - name: Qt headless UI smoke test
         shell: pwsh
         env:
@@ -65,6 +65,15 @@ jobs:
           $proc = Start-Process -FilePath $exe -ArgumentList "--self-test" -Wait -PassThru
           Write-Host "Frozen GUI smoke exit: $($proc.ExitCode)"
           if ($proc.ExitCode -ne 0) { throw "Windows executable smoke test failed: $($proc.ExitCode)" }
+      - name: Capture frozen application screenshots
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $exe = (Resolve-Path ".\dist\NEXVARY-Voice\NEXVARY-Voice.exe").Path
+          $images = Join-Path $env:GITHUB_WORKSPACE "build/screenshots"
+          $proc = Start-Process -FilePath $exe -ArgumentList @("--screenshots", $images) -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "Screenshot capture failed" }
       - name: Locate Inno Setup compiler
         id: inno
         shell: pwsh
@@ -81,10 +90,13 @@ jobs:
         run: |
           & "${{ steps.inno.outputs.compiler }}" tools\windows\NEXVARY-Voice.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed" }
+      - name: Create portable ZIP
+        shell: pwsh
+        run: Compress-Archive -Path dist/NEXVARY-Voice -DestinationPath dist/NEXVARY-Voice-Portable-v0.5.1.zip
       - name: SHA-256 checksums
         shell: pwsh
         run: |
-          $files = @(".\dist\NEXVARY-Voice\NEXVARY-Voice.exe", ".\dist\installers\NEXVARY-Voice-Setup-v0.5.0.exe")
+          $files = @(".\dist\NEXVARY-Voice\NEXVARY-Voice.exe", ".\dist\installers\NEXVARY-Voice-Setup-v0.5.1.exe", ".\dist\NEXVARY-Voice-Portable-v0.5.1.zip")
           foreach ($f in $files) {
             $hash = (Get-FileHash $f -Algorithm SHA256).Hash.ToLower()
             "$hash  $(Split-Path $f -Leaf)" | Add-Content -Path ".\dist\SHA256SUMS.txt"
@@ -93,14 +105,52 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: NEXVARY-Voice-Windows-Portable
-          path: dist/NEXVARY-Voice/
+          path: dist/NEXVARY-Voice-Portable-v0.5.1.zip
           if-no-files-found: error
           retention-days: 21
       - uses: actions/upload-artifact@v4
         with:
           name: NEXVARY-Voice-Windows-Setup
           path: |
-            dist/installers/NEXVARY-Voice-Setup-v0.5.0.exe
+            dist/installers/NEXVARY-Voice-Setup-v0.5.1.exe
             dist/SHA256SUMS.txt
           if-no-files-found: error
+          retention-days: 21
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: NEXVARY-Voice-Windows-Evidence
+          path: |
+            build/test-results.xml
+            build/screenshots/
+          if-no-files-found: warn
+          retention-days: 21
+
+  real-models:
+    name: Real CPU models — six languages and dubbed MP4
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install GUI and bundled runtime manager
+        run: python -m pip install -e "./engine[desktop,dev]" "uv==0.13.0"
+      - name: Exercise isolated GUI setup with actual downloads and inference
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+          PYTHONUTF8: '1'
+        run: python tools/windows/real_model_check.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: NEXVARY-Voice-Real-Model-Evidence
+          path: |
+            build/real-model-results.json
+            build/real-model-log.txt
+            build/real-model-evidence/
+          if-no-files-found: warn
           retention-days: 21

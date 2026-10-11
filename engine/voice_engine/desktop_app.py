@@ -9,9 +9,13 @@ from __future__ import annotations
 import os
 import sys
 import threading
+import json
+import re
+import subprocess
+import time
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QObject, QThread, QTimer, Signal, QByteArray, QSize
+from PySide6.QtCore import Qt, QObject, QThread, QTimer, Signal, QByteArray, QSize, QUrl
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QFont, QColor, QDesktopServices
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -155,7 +159,10 @@ class VoiceWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("NEXVARY Voice Studio  |  Windows")
         self.resize(1150, 790)
-        self.setMinimumSize(880, 620)
+        self.setMinimumSize(780, 560)
+        self.engine_manager = desktop_setup.EngineManager()
+        self._engine_busy = False
+        self._history = []
         self._tasks: list[JobThread] = []
         self._live: LiveThread | None = None
         self._polling = False
@@ -164,7 +171,11 @@ class VoiceWindow(QMainWindow):
         self._translated_srt = ""
         self._init_ui()
         self._set_page(0)
-        self._set_status("جاهز — اضبط عنوان المحرك من الإعدادات.", False)
+        self._set_status("جاهز — افحص الجهاز ثم جهّز المحرك المحلي.", False)
+        self.metrics_timer = QTimer(self)
+        self.metrics_timer.setInterval(2000)
+        self.metrics_timer.timeout.connect(self._refresh_metrics)
+        self.metrics_timer.start()
 
     def _init_ui(self):
         self.setStyleSheet(STYLE)
@@ -177,18 +188,20 @@ class VoiceWindow(QMainWindow):
         sidebar.setObjectName("sidebar")
         sidebar.setFixedWidth(245)
         side = QVBoxLayout(sidebar)
-        side.setContentsMargins(15, 26, 15, 20)
-        side.setSpacing(11)
+        side.setContentsMargins(12, 14, 12, 14)
+        side.setSpacing(6)
         brand = title("NEXVARY", point=24)
         brand.setObjectName("brand")
         side.addWidget(brand)
         side.addWidget(title("VOICE  /  STUDIO", muted=True, point=11))
-        side.addSpacing(28)
+        side.addSpacing(10)
         self.nav: list[QPushButton] = []
         for i, (label, ico) in enumerate([
             ("الرئيسية", "home"), ("مترجم المحادثات", "languages"),
             ("ترجمة الصوت", "mic"), ("دبلجة الفيديو", "video"),
-            ("إعدادات الاتصال", "settings")
+            ("اللغات والأصوات", "languages"), ("فحص الجهاز", "check"),
+            ("إعداد الذكاء الاصطناعي", "download"),
+            ("إعدادات الاتصال", "settings"), ("سجل العمليات والتشخيص", "file")
         ]):
             nav = button(label, ico, primary=False)
             nav.setObjectName("navButton")
@@ -197,10 +210,10 @@ class VoiceWindow(QMainWindow):
             self.nav.append(nav)
             side.addWidget(nav)
         side.addStretch()
-        setup_button = button("فحص الجهاز وتجهيز الذكاء الاصطناعي", "settings", primary=False)
-        setup_button.clicked.connect(self.open_device_setup)
-        side.addWidget(setup_button)
-        side.addWidget(title("DESKTOP EDITION  •  v0.5.0", muted=True, point=10))
+        back = button("رجوع", "swap", primary=False)
+        back.clicked.connect(self._back)
+        side.addWidget(back)
+        side.addWidget(title("DESKTOP EDITION  •  v0.5.1", muted=True, point=10))
         side.addWidget(title("Windows 10 / 11", muted=True, point=10))
 
         main = QFrame()
@@ -223,14 +236,22 @@ class VoiceWindow(QMainWindow):
         self.status_label.setWordWrap(True)
         status_row.addWidget(self.status_label, 1)
         body.addWidget(statusbar)
-        layout.addWidget(sidebar)
+        sidebar_scroll = QScrollArea()
+        sidebar_scroll.setWidgetResizable(True); sidebar_scroll.setFixedWidth(255)
+        sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        sidebar_scroll.setWidget(sidebar)
+        layout.addWidget(sidebar_scroll)
         layout.addWidget(main, 1)
 
         self.stack.addWidget(self._home())
         self.stack.addWidget(self._conversation())
         self.stack.addWidget(self._audio())
         self.stack.addWidget(self._video())
+        self.stack.addWidget(self._languages())
+        self.stack.addWidget(self._diagnostic_page())
+        self.stack.addWidget(self._setup_page())
         self.stack.addWidget(self._settings())
+        self.stack.addWidget(self._logs_page())
 
     def _viewport(self, name, desc):
         scroll = QScrollArea()
@@ -391,6 +412,15 @@ class VoiceWindow(QMainWindow):
         self.video_save.setEnabled(False)
         self.video_save.clicked.connect(self._save_video)
         form.addWidget(self.video_save)
+        self.video_srt_save = button('حفظ SRT للدبلجة','download',primary=False)
+        self.video_srt_save.setEnabled(False); self.video_srt_save.clicked.connect(self._save_dub_srt)
+        form.addWidget(self.video_srt_save)
+        self.video_cancel = button('إلغاء مهمة الدبلجة','stop',primary=False)
+        self.video_cancel.setEnabled(False); self.video_cancel.clicked.connect(self._cancel_video)
+        form.addWidget(self.video_cancel)
+        preview = button('معاينة آخر فيديو محفوظ','play',primary=False)
+        preview.clicked.connect(self._preview_video); form.addWidget(preview)
+        self._last_video = None
         form.addWidget(title(
             "حد الرفع 80 MB. قد تفشل المهمة إذا لم تُثبَّت نماذج Whisper وArgos وPiper على محرك المعالجة.",
             muted=True, point=11))
@@ -437,7 +467,7 @@ class VoiceWindow(QMainWindow):
         check.clicked.connect(self._check_connection)
         form.addWidget(check)
         form.addWidget(title(
-            "محرك محلي: شغّل خدمة Python منفصلة بنماذجك، ثم استخدم عنوان 127.0.0.1. "
+            "المحرك المحلي: افتح مركز إعداد الذكاء الاصطناعي، جهّز المكونات ثم اضغط تشغيل المحرك. "
             "خادم Ubuntu الخفيف لا يعالج الصوت بنفسه، ويجب ربطه بمحرك استدلال.",
             muted=True, point=11))
         col.addWidget(panel)
@@ -453,17 +483,161 @@ class VoiceWindow(QMainWindow):
         col.addStretch()
         return scroll
 
+    def _back(self):
+        if self._history:
+            index = self._history.pop()
+            self.stack.setCurrentIndex(index)
+            for i,nav in enumerate(self.nav): nav.setChecked(i == index)
+        else: self._set_page(0)
+
+    def _setup_page(self):
+        scroll,col = self._viewport("مركز إعداد الذكاء الاصطناعي", "تجهيز مستقل في بيانات المستخدم، ثم تشغيل محرك محلي خاص بهذا الجهاز.")
+        panel,form = card()
+        audit = button("فحص وتجهيز المكونات الناقصة", "download")
+        audit.clicked.connect(self.open_device_setup); form.addWidget(audit)
+        self.engine_controls = []
+        for action,label,ico in [('start','تشغيل المحرك','play'),('stop','إيقاف المحرك','stop'),('restart','إعادة تشغيل المحرك','swap')]:
+            btn = button(label,ico,primary=False)
+            btn.clicked.connect(lambda checked=False,a=action:self._engine_action(a))
+            form.addWidget(btn); self.engine_controls.append(btn)
+        check = button("اختبار اتصال المحرك", "check", primary=False)
+        check.clicked.connect(self._check_connection); form.addWidget(check)
+        self.engine_metrics = title("المحرك متوقف", muted=True, point=11); form.addWidget(self.engine_metrics)
+        self.quality = QComboBox()
+        for model in ('tiny','base','small'): self.quality.addItem(model,model)
+        self.quality.setCurrentText(desktop_setup.load_preferences()['whisper_model'])
+        self.quality.currentTextChanged.connect(self._quality_changed)
+        form.addWidget(title("جودة Whisper — تُطبق بعد تجهيز النموذج وإعادة تشغيل المحرك",point=12))
+        form.addWidget(self.quality)
+        col.addWidget(panel); col.addStretch(); return scroll
+
+    def _quality_changed(self, model):
+        desktop_setup.save_preferences(model)
+        self._set_status("تم حفظ النموذج " + model + ". جهّزه من معالج الإعداد ثم أعد تشغيل المحرك.", True)
+
+    def _engine_action(self, action):
+        if self._engine_busy: return
+        if self._live and self._live.isRunning() or self.video_poll.isActive():
+            self._set_status("أوقف المحادثة أو انتظر انتهاء الدبلجة قبل تغيير حالة المحرك.",False); return
+        self._engine_busy = True
+        for btn in self.engine_controls: btn.setEnabled(False)
+        self._set_status("جارٍ " + action + " للمحرك المحلي…",False)
+        def done(message):
+            self._engine_busy = False
+            for btn in self.engine_controls: btn.setEnabled(True)
+            if action != 'stop': self.endpoint.setText('http://127.0.0.1:8000')
+            self._set_status(message,True)
+        def failed(_):
+            self._engine_busy = False
+            for btn in self.engine_controls: btn.setEnabled(True)
+        self._task(getattr(self.engine_manager,action),done,on_error=failed)
+
+    def _refresh_metrics(self):
+        metrics = self.engine_manager.metrics()
+        self.engine_metrics.setText(f"حالة المحرك: {metrics['state']} | CPU: {metrics['cpu_percent'] if metrics['cpu_percent'] is not None else 'غير مقاس'} % | RAM: {metrics['ram_mb'] if metrics['ram_mb'] is not None else 'غير مقاسة'} MB")
+
+    def _diagnostic_page(self):
+        scroll,col = self._viewport("NEXVARY Smart System Diagnostic", "فحص آمن دون حذف أو تثبيت أي مكونات.")
+        panel,form = card()
+        self.diagnostic_text = QTextEdit(); self.diagnostic_text.setReadOnly(True); self.diagnostic_text.setMinimumHeight(280)
+        form.addWidget(self.diagnostic_text)
+        check = button("فحص الجهاز الآن",'check'); check.clicked.connect(self._audit)
+        form.addWidget(check); self.audit_button = check
+        col.addWidget(panel); col.addStretch(); return scroll
+
+    def _audit(self):
+        self.audit_button.setEnabled(False)
+        def done(data):
+            self.audit_button.setEnabled(True)
+            self.diagnostic_text.setPlainText(json.dumps(data,ensure_ascii=False,indent=2))
+            self._language_result(data)
+            self._set_status("اكتمل فحص الجهاز؛ الاختبارات الوظيفية منفصلة عن وجود الملفات.",True)
+        self._task(desktop_setup.detect,done,on_error=lambda _:self.audit_button.setEnabled(True))
+
+    def _languages(self):
+        scroll,col = self._viewport("إدارة اللغات والأصوات", "حالة الترجمة في الاتجاهين، وصوت Piper لكل لغة. الاختيار لا يعني جاهزية النموذج.")
+        panel,form = card()
+        self.language_rows = {}
+        for name,code in LANGS.items():
+            row = QHBoxLayout(); row.addWidget(title(name,point=12))
+            state = title("لم تُفحص النماذج بعد",muted=True,point=10)
+            row.addWidget(state,1); self.language_rows[code] = state
+            sample = button('استماع','play',primary=False)
+            sample.clicked.connect(lambda checked=False,c=code:self._sample(c)); row.addWidget(sample)
+            form.addLayout(row)
+        refresh = button('فحص اللغات المثبتة','check'); refresh.clicked.connect(self._audit)
+        form.addWidget(refresh)
+        verify = button('اختبار فعلي وتجهيز أصوات ناقصة','settings',primary=False)
+        verify.clicked.connect(self.open_device_setup); form.addWidget(verify)
+        col.addWidget(panel); col.addStretch(); return scroll
+
+    def _language_result(self, data):
+        states = (data.get('model_details') or {}).get('languages',{})
+        for code,label in self.language_rows.items():
+            state = states.get(code)
+            if state:
+                label.setText(('مسار ترجمة مثبت في الاتجاهين' if state['to_english'] and state['from_english'] else 'مسار ترجمة ناقص') + ' | ' + state.get('voice_reason','') + ' | يلزم اختبار وظيفي')
+            else: label.setText('لم يُعثر على تقرير لهذه اللغة؛ لا تُعتبر جاهزة.')
+
+    def _sample(self, code):
+        path = desktop_setup.home()/'samples'/(code+'.wav')
+        if not path.is_file():
+            self._set_status('لا توجد عينة فعلية. جهّز الأصوات ثم شغّل الاختبار الوظيفي.',False); return
+        output_device = self.output_device.currentData()
+        def play():
+            import sounddevice as sd
+            import wave
+            with wave.open(str(path)) as wav:
+                with sd.RawOutputStream(samplerate=wav.getframerate(),channels=wav.getnchannels(),
+                                        dtype='int16',device=output_device) as stream:
+                    stream.write(wav.readframes(wav.getnframes()))
+            return 'تم إرسال العينة إلى السماعة المحددة؛ تحقق من سماعها.'
+        self._task(play,lambda result:self._set_status(result,True))
+
+    def _logs_page(self):
+        scroll,col = self._viewport('سجل العمليات والتشخيص','أخطاء مفهومة وتقارير الاختبارات المحلية دون حفظ رموز API.')
+        self.operation_log = QTextEdit(); self.operation_log.setReadOnly(True); self.operation_log.setMinimumHeight(280)
+        col.addWidget(self.operation_log)
+        read = button('عرض تقرير الاختبارات الفعلية','file',primary=False)
+        read.clicked.connect(self._read_validation); col.addWidget(read)
+        engine = button('عرض سجل المحرك المحلي','file',primary=False)
+        engine.clicked.connect(self._read_engine_log); col.addWidget(engine)
+        col.addStretch(); return scroll
+
+    def _safe_log(self, message):
+        if self._secret_value: message = message.replace(self._secret_value,'[REDACTED]')
+        message = re.sub(r'(?i)Bearer\s+[^\s]+', 'Bearer [REDACTED]', str(message))
+        return message
+
+    def _read_validation(self):
+        path = desktop_setup.home()/'functional-tests.json'
+        try: self.operation_log.setPlainText(self._safe_log(path.read_text(encoding='utf-8')))
+        except OSError: self._set_status('لا يوجد تقرير اختبارات فعلية بعد؛ شغّل الاختبار من معالج الإعداد.',False)
+
+    def _read_engine_log(self):
+        path = desktop_setup.home()/'engine.log'
+        try:
+            with path.open('rb') as source:
+                source.seek(max(0,path.stat().st_size-40000))
+                self.operation_log.setPlainText(self._safe_log(source.read().decode('utf-8',errors='replace')))
+        except OSError: self._set_status('لا يوجد سجل للمحرك المحلي بعد.',False)
+
     def open_device_setup(self):
         dialog = SetupDialog(self)
         dialog.exec()
-        self._set_status("أُغلق معالج الإعداد. تحقق من الاتصال بمحركك المحلي.", False)
+        if dialog._result: self._language_result(dialog._result)
+        self._set_status("أُغلق معالج الإعداد. شغّل المحرك من مركز إعداد الذكاء الاصطناعي.", False)
 
     def _set_page(self, index):
+        current = self.stack.currentIndex()
+        if current != index: self._history.append(current)
         self.stack.setCurrentIndex(index)
         for i, nav in enumerate(self.nav):
             nav.setChecked(i == index)
 
     def _set_status(self, message: str, success: bool):
+        if hasattr(self, 'operation_log'):
+            self.operation_log.append(self._safe_log(message))
         self.status_label.setText(("●  " if success else "◌  ") + message)
         self.status_label.setStyleSheet("color:" + (COLORS["cyan"] if success else COLORS["muted"]))
 
@@ -554,6 +728,8 @@ class VoiceWindow(QMainWindow):
     def _start_audio(self):
         if self._live and self._live.isRunning():
             return
+        if self._video_job and self.video_poll.isActive():
+            self._set_status("انتظر انتهاء الدبلجة قبل بدء المحادثة الصوتية.", False); return
         try:
             url = websocket_url(self.endpoint.text())
         except ClientError as exc:
@@ -599,6 +775,8 @@ class VoiceWindow(QMainWindow):
             self.selected_video.setText(self._video_file.name)
 
     def _upload_video(self):
+        if self._live and self._live.isRunning():
+            self._set_status("أوقف المحادثة الصوتية قبل بدء الدبلجة.", False); return
         if not self._video_file.is_file():
             self._set_status("اختر فيديو MP4 صحيحًا.", False)
             return
@@ -611,6 +789,8 @@ class VoiceWindow(QMainWindow):
             self.upload.setEnabled(True)
             self._video_job = str(data["job_id"])
             self.job_status.setText("المهمة " + self._video_job[:16] + " • " + str(data.get("status")))
+            self.video_cancel.setEnabled(True)
+            self.video_srt_save.setEnabled(False)
             self.video_poll.start()
             self._set_status("تم إرسال الفيديو؛ يجري فحص حالة المهمة.", True)
 
@@ -624,11 +804,13 @@ class VoiceWindow(QMainWindow):
         def done(data):
             self._polling = False
             state = str(data.get("status", "unknown"))
-            self.job_status.setText("حالة الدبلجة: " + state)
-            if state in ("complete", "failed"):
+            self.job_status.setText("حالة الدبلجة: " + state + " | " + str(data.get("phase", "")) + " | " + str(data.get("completed_segments",0)) + "/" + str(data.get("total_segments") or "غير معروف"))
+            if state in ("complete", "failed", "cancelled"):
+                self.video_cancel.setEnabled(False)
                 self.video_poll.stop()
             if state == "complete":
                 self.video_save.setEnabled(True)
+                self.video_srt_save.setEnabled(True)
                 self._set_status("انتهت الدبلجة؛ اختر حفظ الفيديو.", True)
             if state == "failed":
                 self._set_status("تعذرت الدبلجة: " + str(data.get("error", ""))[:180], False)
@@ -645,9 +827,28 @@ class VoiceWindow(QMainWindow):
         self._set_status("جارٍ تنزيل الفيديو النهائي…", False)
         def success(p):
             self.video_save.setEnabled(True)
+            self._last_video = Path(p)
             self._set_status("تم حفظ الفيديو: " + str(p), True)
         self._task(lambda: self._api().download_video(self._video_job, Path(path)),
                    success, on_error=lambda _: self.video_save.setEnabled(True))
+
+    def _cancel_video(self):
+        if not self._video_job: return
+        self.video_cancel.setEnabled(False)
+        self._task(lambda:self._api().cancel_video(self._video_job),
+                   lambda _:self._set_status('تم طلب الإلغاء؛ يتوقف بعد مرحلة النموذج الحالية.',True),
+                   on_error=lambda _:self.video_cancel.setEnabled(True))
+
+    def _save_dub_srt(self):
+        path,_ = QFileDialog.getSaveFileName(self,'حفظ SRT للدبلجة','NEXVARY-Dubbed.srt','SRT (*.srt)')
+        if not path: return
+        self._task(lambda:self._api().download_subtitles(self._video_job,Path(path)),
+                   lambda result:self._set_status('تم حفظ '+str(result),True))
+
+    def _preview_video(self):
+        if self._last_video and self._last_video.is_file():
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(self._last_video.resolve())))
+        else: self._set_status('احفظ فيديو مكتملًا أولًا ثم شغّل المعاينة.',False)
 
     def _pick_srt(self):
         path, _ = QFileDialog.getOpenFileName(self, "اختيار ملف ترجمة", "", "SRT files (*.srt)")
@@ -692,11 +893,22 @@ class VoiceWindow(QMainWindow):
             event.ignore()
             return
         self.video_poll.stop()
+        self.metrics_timer.stop()
+        if self.engine_manager.process is not None:
+            # Shutdown only our own loopback child. Never terminate external services.
+            if self._engine_busy:
+                event.ignore(); return
+            self._engine_busy = True
+            self._task(self.engine_manager.stop, lambda _: (setattr(self, '_engine_busy', False), self.close()),
+                       on_error=lambda _: setattr(self, '_engine_busy',False))
+            event.ignore(); return
         event.accept()
 
 
 STYLE = """
-QWidget { background:#08111f; color:#edf3fa; font-family:'Segoe UI'; font-size:13px; }
+QWidget { background:#08111f; color:#edf3fa; font-family:'Segoe UI'; }
+QLabel { background:transparent; }
+QPushButton, QLineEdit, QComboBox, QTextEdit { font-size:13px; }
 QFrame#sidebar { background:#101e32; border-right:1px solid #2e455f; }
 QFrame#mainArea { background:#08111f; }
 QLabel#brand { color:#e7c17f; letter-spacing:2px; }
@@ -740,13 +952,23 @@ def main(argv=None):
     app.setFont(QFont("Segoe UI", 11))
     app.setLayoutDirection(Qt.RightToLeft)
     window = VoiceWindow()
+    if "--screenshots" in argv:
+        directory = Path(argv[argv.index('--screenshots')+1]); directory.mkdir(parents=True,exist_ok=True)
+        window.show()
+        for index,name in [(0,'dashboard'),(4,'languages'),(6,'setup'),(3,'video')]:
+            window._set_page(index); app.processEvents()
+            window.grab().save(str(directory/(name+'.png')))
+        wizard = SetupDialog(window,audit=False); wizard.show(); app.processEvents()
+        wizard.grab().save(str(directory/'diagnostic.png'))
+        wizard.close(); window.close()
+        return 0
     if "--self-test" in argv:
         wizard = SetupDialog(window, audit=False)
         assert len(wizard.rows) == 8
         assert "all" in wizard.buttons
         wizard.close()
-        assert window.stack.count() == 5
-        assert len(window.nav) == 5
+        assert window.stack.count() == 9
+        assert len(window.nav) == 9
         assert window.audio_start.isEnabled()
         assert window.upload.isEnabled()
         if getattr(sys, "frozen", False):

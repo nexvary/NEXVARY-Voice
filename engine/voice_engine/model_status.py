@@ -9,7 +9,7 @@ def installed_pairs() -> set[tuple[str, str]]:
     try:
         import argostranslate.package as packages
         return {(p.from_code, p.to_code) for p in packages.get_installed_packages()}
-    except (ImportError, AttributeError):
+    except Exception:
         return set()
 
 def report(voices_path: Path | None = None) -> dict:
@@ -22,14 +22,34 @@ def report(voices_path: Path | None = None) -> dict:
     if not isinstance(voices, dict):
         voices = {}
     states = {}
+    def path_available(source, target):
+        if source == target: return True
+        seen, todo = {source}, [source]
+        while todo:
+            node = todo.pop()
+            for a,b in pairs:
+                if a == node and b not in seen:
+                    if b == target: return True
+                    seen.add(b); todo.append(b)
+        return False
     for code in CODES:
-        incoming = code == "en" or (code, "en") in pairs
-        outgoing = code == "en" or ("en", code) in pairs
+        incoming = path_available(code, "en")
+        outgoing = path_available("en", code)
         voice = voices.get(code)
         good_voice = isinstance(voice, str) and Path(voice).is_file() and Path(voice + ".json").is_file()
+        reason = "ملف الصوت أو ملف الإعداد غير موجود."
+        if good_voice:
+            try:
+                config = json.loads(Path(voice + ".json").read_text(encoding="utf-8"))
+                good_voice = Path(voice).stat().st_size > 1024 and isinstance(config.get("audio", {}).get("sample_rate"), int) and bool(config.get("phoneme_id_map"))
+                reason = "الملفات سليمة بنيويًا؛ يلزم اختبار توليد صوت." if good_voice else "ملف ONNX أو التكوين ناقص أو غير صالح."
+            except (OSError, ValueError, AttributeError):
+                good_voice = False; reason = "ملف إعداد الصوت تالف."
         states[code] = {"to_english": incoming, "from_english": outgoing,
-                        "piper_voice_ready": good_voice}
-    return {"languages": states,
+                        "piper_voice_ready": good_voice, "voice_reason": reason, "voice_state": "unverified" if good_voice else "repair" if voice else "missing",
+                        "translation_state": "unverified" if incoming and outgoing else "missing"}
+    return {"languages": states, "readiness_kind": "installed_files_only",
+            "translation_pairs": [list(p) for p in sorted(pairs)],
             "translation_ready": all(v["to_english"] and v["from_english"] for v in states.values()),
             "piper_ready": all(v["piper_voice_ready"] for v in states.values())}
 

@@ -9,6 +9,8 @@ import json
 import os
 import subprocess
 import tempfile
+import threading
+import time
 from pathlib import Path
 from typing import Protocol
 
@@ -69,6 +71,40 @@ def probe_duration(video: Path) -> float:
     return duration
 
 
+def probe_streams(video: Path) -> dict:
+    try:
+        result = subprocess.run(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(video)],
+                                capture_output=True,text=True,check=True,timeout=30,
+                                creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+        data = json.loads(result.stdout)
+        types = {v.get('codec_type') for v in data.get('streams',[])}
+        if not {'audio','video'} <= types or float(data['format']['duration']) <= 0:
+            raise ValueError('No valid video/audio stream')
+        return data
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
+        raise AudioBackendUnavailable('الفيديو الناتج لا يحتوي مساري فيديو وصوت صالحين.') from exc
+
+
+def cancellable_runner(cancelled):
+    def run(argv):
+        with tempfile.TemporaryFile() as output:
+            proc = subprocess.Popen(argv,stdin=subprocess.DEVNULL,stdout=output,stderr=output,
+                                    creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+            start = time.monotonic()
+            try:
+                while proc.poll() is None:
+                    if cancelled(): raise RuntimeError('تم إلغاء مهمة الدبلجة.')
+                    if time.monotonic()-start > 180: raise RuntimeError('انتهت مهلة معالجة الفيديو.')
+                    time.sleep(0.1)
+                if proc.returncode: raise AudioBackendUnavailable('فشل FFmpeg أثناء المعالجة.')
+            finally:
+                if proc.poll() is None:
+                    proc.terminate()
+                    try: proc.wait(timeout=3)
+                    except subprocess.TimeoutExpired: proc.kill(); proc.wait(timeout=3)
+    return run
+
+
 def make_mix_command(clips: list[tuple[float, Path]], duration: float,
                      script: Path, output: Path) -> list[str]:
     """Use a bounded filter script instead of inlining user text in a shell command."""
@@ -100,8 +136,14 @@ def make_mix_command(clips: list[tuple[float, Path]], duration: float,
 
 def dub_video(video: Path, output: Path, source: str, target: str,
               asr: SpeechRecognizer, translator: Translator, tts: SpeechSynthesizer,
-              *, runner=run_checked, duration_probe=probe_duration) -> dict:
+              *, runner=run_checked, duration_probe=probe_duration,
+              cancelled=None, progress=None, output_probe=None) -> dict:
     """Create translated speech, SRT, and muxed MP4; refuse overwriting any file."""
+    cancelled = cancelled or (lambda:False)
+    progress = progress or (lambda stage,done,total:None)
+    def check():
+        if cancelled(): raise RuntimeError('تم إلغاء مهمة الدبلجة.')
+    check()
     video, output = Path(video), Path(output)
     if not video.is_file():
         raise FileNotFoundError(f"Video not found: {video}")
@@ -122,10 +164,12 @@ def dub_video(video: Path, output: Path, source: str, target: str,
         runner(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
                 "-i", str(video), "-vn", "-ac", "1", "-ar", "16000",
                 "-c:a", "pcm_s16le", str(raw_audio)])
+        check(); progress("speech-recognition",0,None)
         original = validated_segments(asr.transcribe(raw_audio, source), duration)
         translated = []
         clips = []
         for index, seg in enumerate(original):
+            check(); progress("translation-and-speech",index,len(original))
             translated_text = translator.translate(seg.text, source, target).strip()
             if not translated_text:
                 raise AudioBackendUnavailable("Translation engine returned empty text")
@@ -135,6 +179,7 @@ def dub_video(video: Path, output: Path, source: str, target: str,
             if not clip_path.is_file() or clip_path.stat().st_size == 0:
                 raise AudioBackendUnavailable("Missing synthesized voice clip")
             clips.append((seg.start, clip_path))
+        check(); progress("muxing",len(original),len(original))
         voice_track = work / "translated.wav"
         runner(make_mix_command(clips, duration, work / "mix.filter", voice_track))
         staged_video = work / "dubbed.mp4"
@@ -145,8 +190,12 @@ def dub_video(video: Path, output: Path, source: str, target: str,
                 f"{duration:.3f}", "-movflags", "+faststart", str(staged_video)])
         if not staged_video.is_file() or staged_video.stat().st_size == 0:
             raise AudioBackendUnavailable("FFmpeg failed to create dubbed MP4")
+        check()
+        if output_probe is not None: output_probe(staged_video)
+        elif runner is run_checked: probe_streams(staged_video)
         staged_srt = work / "dubbed.srt"
         staged_srt.write_text(captions(translated), encoding="utf-8")
+        check()
         os.replace(staged_video, output)
         os.replace(staged_srt, subtitle_output)
     return {"video": str(output), "subtitles": str(subtitle_output),
