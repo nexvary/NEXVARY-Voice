@@ -88,7 +88,8 @@ class EdgeTTS:
     DEFAULT_VOICES = {"ar": "ar-EG-SalmaNeural", "en": "en-US-JennyNeural",
                       "hi": "hi-IN-SwaraNeural", "tr": "tr-TR-EmelNeural",
                       "fr": "fr-FR-DeniseNeural", "de": "de-DE-KatjaNeural",
-                      "es": "es-ES-ElviraNeural", "it": "it-IT-ElsaNeural"}
+                      "es": "es-ES-ElviraNeural", "it": "it-IT-ElsaNeural",
+                      "ru": "ru-RU-SvetlanaNeural", "bn": "bn-BD-NabanitaNeural"}
 
     def __init__(self, allow_cloud: bool = False, voice: str | None = None):
         if not allow_cloud:

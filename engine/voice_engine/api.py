@@ -21,6 +21,7 @@ app = FastAPI(title="NEXVARY Voice Engine", version="0.3.0", docs_url="/docs")
 
 LANGUAGES = {
     "ar": "Arabic", "en": "English", "hi": "Hindi", "tr": "Turkish",
+    "ru": "Russian", "bn": "Bengali",
     "fr": "French", "de": "German", "es": "Spanish", "it": "Italian",
 }
 

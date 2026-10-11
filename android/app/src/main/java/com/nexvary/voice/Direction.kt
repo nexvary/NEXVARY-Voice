@@ -14,6 +14,8 @@ object Languages {
         VoiceLanguage("fr", "fr-FR", "الفرنسية 🇫🇷"),
         VoiceLanguage("de", "de-DE", "الألمانية 🇩🇪"),
         VoiceLanguage("es", "es-ES", "الإسبانية 🇪🇸"),
-        VoiceLanguage("it", "it-IT", "الإيطالية 🇮🇹")
+        VoiceLanguage("it", "it-IT", "الإيطالية 🇮🇹"),
+        VoiceLanguage("ru", "ru-RU", "الروسية 🇷🇺"),
+        VoiceLanguage("bn", "bn-BD", "البنغالية 🇧🇩")
     )
 }

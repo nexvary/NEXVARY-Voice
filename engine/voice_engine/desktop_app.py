@@ -31,7 +31,7 @@ COLORS = {
     "red": "#ef868c",
 }
 LANGS = {"العربية": "ar", "English": "en", "हिन्दी": "hi", "Türkçe": "tr",
-         "Français": "fr", "Deutsch": "de", "Español": "es", "Italiano": "it"}
+         "Français": "fr", "Deutsch": "de", "Español": "es", "Italiano": "it", "Русский": "ru", "বাংলা": "bn"}
 ICON_PATHS = {
     "home": '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
     "languages": '<path d="M5 8h12M9 5v3c0 6-3 9-6 11M6 12c3 2 5 4 9 5M14 19l4-9 4 9M15 17h6"/>',

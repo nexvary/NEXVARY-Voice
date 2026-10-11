@@ -17,3 +17,10 @@ android/.idea/
 android/app/build/
 build/
 dist/
+
+# Local speech model weights and machine-specific voice mappings
+engine/voices.json
+engine/models/
+models/
+*.onnx
+*.onnx.json

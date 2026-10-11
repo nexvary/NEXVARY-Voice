@@ -13,7 +13,7 @@ from urllib.parse import urlsplit, urlunsplit
 import httpx
 
 MAX_UPLOAD = 80 * 1024 * 1024
-LANGUAGES = {"ar", "en", "hi", "tr", "fr", "de", "es", "it"}
+LANGUAGES = {"ar", "en", "hi", "tr", "fr", "de", "es", "it", "ru", "bn"}
 
 
 class ClientError(RuntimeError):
