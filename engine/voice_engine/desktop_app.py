@@ -213,7 +213,7 @@ class VoiceWindow(QMainWindow):
         back = button("رجوع", "swap", primary=False)
         back.clicked.connect(self._back)
         side.addWidget(back)
-        side.addWidget(title("DESKTOP EDITION  •  v0.5.2", muted=True, point=10))
+        side.addWidget(title("DESKTOP EDITION  •  v0.5.3", muted=True, point=10))
         side.addWidget(title("Windows 10 / 11", muted=True, point=10))
 
         main = QFrame()

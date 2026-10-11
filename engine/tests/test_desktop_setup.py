@@ -32,11 +32,13 @@ def test_uv_pipeline_never_installs_to_global_python(monkeypatch, tmp_path):
     (tmp_path / "engine" / "pyproject.toml").write_text("[project]")
     monkeypatch.setattr(setup, "existing_system_python", lambda: None)
     base = tmp_path / "local"
-    actions = setup.pipeline(base)
-    assert len(actions) == 3
-    assert all(str(tmp_path / "bin" / "uv.exe") == cmd[0] for cmd in actions)
+    interpreter = tmp_path / "private-python.exe"
+    actions = setup.pipeline(base, interpreter=interpreter)
+    assert len(actions) == 2
+    assert actions[0][0] == str(interpreter)
+    assert "--copies" in actions[0] and "--without-pip" in actions[0]
     assert str(setup.python_path(base)) in actions[-1]
-    assert str(base / "runtime") in actions[1]
+    assert str(base / "runtime") in actions[0]
 
 
 def test_setup_stages_restricted(monkeypatch, tmp_path):

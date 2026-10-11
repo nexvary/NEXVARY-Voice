@@ -10,6 +10,8 @@ import ctypes
 import json
 import os
 import platform
+import re
+import stat
 import shutil
 import subprocess
 import sys
@@ -21,7 +23,7 @@ from .downloads import fetch_verified, digest_file
 from .asset_inventory import voice_map, functional_report
 
 LANG_CODES = ("ar", "en", "it", "ru", "es", "bn")
-RUNTIME_VERSIONS = {"faster-whisper":"1.2.1", "argostranslate":"1.11.0", "piper-tts":"1.8.0", "nexvary-voice-engine":"0.5.2"}
+RUNTIME_VERSIONS = {"faster-whisper":"1.2.1", "argostranslate":"1.11.0", "piper-tts":"1.8.0", "nexvary-voice-engine":"0.5.3"}
 WHISPER_SIZE = {"tiny", "base", "small"}
 FFMPEG_URL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -55,6 +57,11 @@ def setup_environment(base: Path | None = None) -> dict[str, str]:
     dest = base or home()
     env = dict(os.environ)
     env["UV_CACHE_DIR"] = str(dest / "cache")
+    # Python aliases/state can otherwise land in roaming AppData and encounter
+    # cloud-provider reparse points even with UV_PYTHON_INSTALL_DIR set.
+    env["UV_DATA_DIR"] = str(dest / "uv-data")
+    env["UV_PYTHON_BIN_DIR"] = str(dest / "python-links")
+    env["UV_LINK_MODE"] = "copy"
     env["UV_PYTHON_INSTALL_DIR"] = str(dest / "pythons")
     env["UV_NO_PROGRESS"] = "1"
     env["ARGOS_PACKAGES_DIR"] = str(dest / "argos")
@@ -203,7 +210,88 @@ def detect(base: Path | None = None) -> dict:
     }
 
 
-def pipeline(base: Path | None = None) -> list[list[str]]:
+class SetupCommandError(RuntimeError):
+    """Bounded subprocess evidence used for narrowly scoped recovery."""
+    def __init__(self, label: str, code: int, output: str):
+        super().__init__("فشل " + label + f" (code {code}).")
+        self.code = code
+        self.output = output[-12000:]
+
+
+def managed_python(base: Path | None = None) -> Path | None:
+    """Probe full patch directories only; never traverse uv minor-version links.
+
+    A failed alias operation can leave a complete, usable interpreter behind.
+    Reject links escaping our store and test Python, architecture and stdlib
+    before using an existing extraction. No writes or downloads here.
+    """
+    root = (base or home()) / "pythons"
+    try:
+        children = sorted(root.iterdir(), reverse=True)[:64]
+    except OSError:
+        return None
+    for child in children:
+        if not re.fullmatch(r"cpython-3\.11\.\d+-windows-x86_64-none", child.name):
+            continue
+        try:
+            attributes = getattr(child.lstat(), "st_file_attributes", 0)
+            if child.is_symlink() or attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 1024):
+                continue
+            executable = child / "python.exe"
+            if not executable.is_file() or not executable.resolve().is_relative_to(root.resolve()):
+                continue
+            result = subprocess.run(
+                [str(executable), "-I", "-c",
+                 "import sys,struct,ssl,venv; print(sys.version_info[:2]==(3,11) and struct.calcsize('P')==8)"],
+                capture_output=True, text=True, encoding="utf-8", timeout=8,
+                creationflags=NO_WINDOW)
+            if result.returncode == 0 and result.stdout.strip() == "True":
+                return executable
+        except (OSError, subprocess.SubprocessError):
+            continue
+    return None
+
+
+def prepare_python(execute, log, *, base: Path | None = None, cancelled=None) -> Path | None:
+    """Recover a downloaded interpreter without accepting a failed installation.
+
+    Windows 448 during uv's optional alias creation is recoverable only if the
+    real downloaded executable independently passes our functional probe.
+    Connection, extraction and cancellation failures remain failures.
+    """
+    dest = base or home()
+    if cancelled and cancelled():
+        raise RuntimeError("تم إيقاف الإعداد.")
+    if python_path(dest).is_file():
+        return None
+    interpreter = managed_python(dest) or existing_system_python()
+    if interpreter:
+        log("تم اختبار Python الموجود؛ لا حاجة لإعادة تنزيله.")
+        return interpreter
+    if not uv_path().is_file():
+        raise RuntimeError("لم يتم تضمين محرك إعداد Python في برنامج Windows.")
+    try:
+        execute([str(uv_path()), "python", "install", "3.11"], "تنزيل واختبار Python مستقل")
+    except SetupCommandError as exc:
+        if cancelled and cancelled():
+            raise RuntimeError("تم إيقاف الإعداد.") from exc
+        evidence = exc.output.lower()
+        if "minor version link directory" not in evidence or "os error 448" not in evidence:
+            raise
+        interpreter = managed_python(dest)
+        if not interpreter:
+            raise RuntimeError("رفض Windows الرابط الداخلي (448)، ولم يجتز Python المنزّل اختبار التشغيل؛ لم يكتمل الإعداد.") from exc
+        log("رفض Windows رابط Python الداخلي (448). اجتاز الملف المنزّل اختبار التشغيل؛ نكمل باستخدامه مباشرة دون إنشاء ذلك الرابط.")
+        return interpreter
+    if cancelled and cancelled():
+        raise RuntimeError("تم إيقاف الإعداد.")
+    interpreter = managed_python(dest)
+    if not interpreter:
+        raise RuntimeError("لم يجتز Python المنزّل اختبار التشغيل والتوافق.")
+    return interpreter
+
+
+def pipeline(base: Path | None = None, *, interpreter: Path | None = None) -> list[list[str]]:
     dest = base or home()
     uv = uv_path()
     src = source_dir()
@@ -212,12 +300,14 @@ def pipeline(base: Path | None = None) -> list[list[str]]:
     if not (src / "pyproject.toml").is_file():
         raise RuntimeError("ملفات المحرك البرمجية غير موجودة في حزمة Windows.")
     env = python_path(dest)
-    # Reuse a compatible interpreter if installed, but NEVER install packages
-    # into the user's system Python. Always build a separate private venv.
-    existing = existing_system_python()
-    commands = [] if existing or env.is_file() else [[str(uv), "python", "install", "3.11"]]
+    commands = []
     if not env.is_file():
-        commands.append([str(uv), "venv", "--python", str(existing or "3.11"), str(env.parent.parent)])
+        interpreter = interpreter or managed_python(dest) or existing_system_python()
+        if not interpreter:
+            raise RuntimeError("يجب تجهيز Python واختباره قبل إنشاء البيئة المستقلة.")
+        # stdlib venv with copies bypasses uv's minor-version junction machinery.
+        # pip need not be bootstrapped: bundled uv installs into the private venv.
+        commands.append([str(interpreter), "-I", "-m", "venv", "--copies", "--without-pip", str(env.parent.parent)])
     commands.append([str(uv), "pip", "install", "--python", str(env), str(src) + "[offline,speech]"])
     return commands
 

@@ -55,17 +55,19 @@ class SetupTask(QThread):
         self._process = subprocess.Popen(argv, env=setup.setup_environment(), cwd=str(dest),
             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, encoding="utf-8", errors="replace", bufsize=1, creationflags=setup.NO_WINDOW)
+        recent = []
         try:
             for line in self._process.stdout:
                 if self._stop.is_set(): setup.stop_owned_process(self._process); break
                 text = line.strip()
+                recent.append(text[-500:]); recent = recent[-24:]
                 if text.startswith("PROGRESS:"):
                     try: self.progress.emit(json.loads(text[9:]))
                     except ValueError: pass
                 elif text: self.message.emit(text[-350:])
             code = self._process.wait(timeout=10)
             if self._stop.is_set(): raise RuntimeError("تم إيقاف الإعداد؛ أعد المحاولة لاستكمال المكونات الناقصة.")
-            if code: raise RuntimeError("فشل " + label + f" (code {code}).")
+            if code: raise setup.SetupCommandError(label, code, "\n".join(recent))
         finally:
             if self._process.poll() is None:
                 self._process.kill(); self._process.wait(timeout=5)
@@ -79,7 +81,8 @@ class SetupTask(QThread):
         write_probe(setup.home())
         if self.check_runtime():
             self.message.emit("تم التحقق من Runtime الموجود؛ لا حاجة لإعادة التثبيت."); return
-        for command in setup.pipeline(): self.execute(command, "تهيئة Runtime مستقل")
+        interpreter = setup.prepare_python(self.execute, self.message.emit, cancelled=self._stop.is_set)
+        for command in setup.pipeline(interpreter=interpreter): self.execute(command, "تهيئة Runtime مستقل")
         if not self.check_runtime(): raise RuntimeError("فشل اختبار استيراد مكونات المحرك.")
 
     def verify(self, stage):

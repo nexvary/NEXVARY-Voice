@@ -95,6 +95,19 @@ args=parser.parse_args()
 worker = SetupTask(args.stage)
 worker.message.connect(log);worker.problem.connect(log)
 worker.done.connect(results.append)
+# Inject only the optional-link error AFTER the real downloader has extracted
+# its interpreter. This exercises real Python/venv/packages with a simulated
+# Windows policy failure, not a claim of reproducing the user's cloud driver.
+recovered = []
+if args.stage == 'runtime':
+    original_execute = worker.execute
+    def optional_link_failure(argv, label):
+        original_execute(argv, label)
+        if argv[1:3] == ['python', 'install']:
+            recovered.append(True)
+            raise desktop_setup.SetupCommandError(label, 2,
+                'Failed to create Python minor version link directory (os error 448)')
+    worker.execute = optional_link_failure
 if args.stage.endswith('-test'):
     try:
         worker.verify(args.stage.split('-')[0])
@@ -108,6 +121,17 @@ if args.stage.endswith('-test'):
     except Exception as exc:
         log(str(exc));results.append(False)
 else: worker.run()
+if args.stage == 'runtime' and results and results[-1]:
+    assert recovered, 'Fresh private Python must exercise the injected link failure'
+    # Healthy retry must return before executing any installer or redownloading.
+    def unexpected_install(*args): raise AssertionError('Healthy runtime was reinstalled')
+    worker.execute = unexpected_install
+    worker.install_runtime()
+    log('PASS: real extracted Python + copied venv + runtime imports after simulated 448; healthy retry installs nothing')
+    (output/'runtime-recovery-results.json').write_text(json.dumps({
+        'passed':True, 'error_injection':'simulated optional junction failure (448)',
+        'python_venv_packages':'real Windows execution', 'healthy_retry':'no installation commands',
+        'physical_windows_10_cloud_filter':'not reproduced'}, indent=2), encoding='utf-8')
 state = desktop_setup.detect()
 functional = root/'functional-tests.json'
 report = {'stage':args.stage,'setup_passed':bool(results and results[-1]),'diagnostics':state,
