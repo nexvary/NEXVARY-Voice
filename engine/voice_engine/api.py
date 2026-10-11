@@ -6,7 +6,9 @@ import json
 import os
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi.responses import FileResponse
+from .video_jobs import get_job_queue, MAX_UPLOAD_BYTES
 from starlette.concurrency import run_in_threadpool
 from .speech import AudioBackendUnavailable
 from .live import CHUNK_BYTES, MAX_FRAME_BYTES, MIN_CHUNK_BYTES, get_live_processor
@@ -231,3 +233,77 @@ async def live_audio(websocket: WebSocket):
             await websocket.close(code=1003)
         except RuntimeError:
             pass
+
+
+@app.post("/v1/dub/jobs", status_code=202, dependencies=[Depends(require_token)])
+async def video_job_submit(
+    file: UploadFile = File(...),
+    source_language: str = Form(...),
+    target_language: str = Form(...)
+):
+    """Receive MP4 up to 80 MiB, queue on-prem speech dub and return job ID."""
+    try:
+        source = Turn.validate_language(source_language)
+        target = Turn.validate_language(target_language)
+    except ValueError as exc:
+        raise HTTPException(422, detail="Unsupported language") from exc
+    if source == target:
+        raise HTTPException(422, detail="Choose two different languages")
+    if not file.filename or not file.filename.lower().endswith(".mp4"):
+        raise HTTPException(415, detail="Only MP4 video uploads supported")
+    queue = get_job_queue()
+    try:
+        job = queue.allocate(source, target)
+    except RuntimeError as exc:
+        raise HTTPException(429, detail=str(exc)) from exc
+    try:
+        total = 0
+        path = job.workdir / "source.mp4"
+        with path.open("wb") as sink:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_UPLOAD_BYTES:
+                    raise HTTPException(413, detail="Video must be at most 80 MiB")
+                sink.write(chunk)
+        if total == 0:
+            raise HTTPException(422, detail="Empty video")
+        queue.start(job)
+        return job.view()
+    except Exception:
+        queue.fail_upload(job.job_id)
+        raise
+    finally:
+        await file.close()
+
+
+@app.get("/v1/dub/jobs/{job_id}", dependencies=[Depends(require_token)])
+def video_job_status(job_id: str):
+    job = get_job_queue().get(job_id)
+    if job is None:
+        raise HTTPException(404, detail="Unknown or expired video job")
+    return job.view()
+
+
+@app.get("/v1/dub/jobs/{job_id}/video", dependencies=[Depends(require_token)])
+def video_job_download(job_id: str):
+    job = get_job_queue().get(job_id)
+    if job is None:
+        raise HTTPException(404, detail="Unknown or expired video job")
+    if job.status != "complete" or job.output is None or not job.output.is_file():
+        raise HTTPException(409, detail="Dubbing is not complete")
+    return FileResponse(job.output, media_type="video/mp4",
+                        filename="NEXVARY-Voice-Dubbed.mp4")
+
+
+@app.delete("/v1/dub/jobs/{job_id}", dependencies=[Depends(require_token)])
+def video_job_delete(job_id: str):
+    try:
+        deleted = get_job_queue().delete(job_id)
+    except RuntimeError as exc:
+        raise HTTPException(409, detail=str(exc)) from exc
+    if not deleted:
+        raise HTTPException(404, detail="Unknown video job")
+    return {"deleted": True}
