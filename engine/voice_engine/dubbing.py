@@ -169,7 +169,9 @@ def dub_video(video: Path, output: Path, source: str, target: str,
     if not 0 < duration <= 1800:
         raise ValueError("Only videos up to 30 minutes are supported")
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="nexvary-dub-") as folder:
+    # Publish with atomic rename on the destination volume. Windows users may
+    # save to D:/USB while TEMP lives on C:, where os.replace cannot cross drives.
+    with tempfile.TemporaryDirectory(prefix="nexvary-dub-", dir=output.parent) as folder:
         work = Path(folder)
         raw_audio = work / "original.wav"
         runner(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
