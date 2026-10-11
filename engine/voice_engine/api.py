@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .translator import ArgosTranslator, TranslationUnavailable, Translator
 
-app = FastAPI(title="NEXVARY Voice Engine", version="0.5.3", docs_url="/docs")
+app = FastAPI(title="NEXVARY Voice Engine", version="0.6.0", docs_url="/docs")
 
 LANGUAGES = {
     "ar": "Arabic", "en": "English", "hi": "Hindi", "tr": "Turkish",

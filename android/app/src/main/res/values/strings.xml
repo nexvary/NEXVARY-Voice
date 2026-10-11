@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_000" formatted="false">"Microphone permission denied."</string>
+    <string name="ui_001" formatted="false">"Test the connection in Settings first."</string>
+    <string name="ui_002" formatted="false">"No SRT file selected"</string>
+    <string name="ui_003" formatted="false">"No MP4 video selected"</string>
+    <string name="ui_004" formatted="false">"Verifying the computer certificate and pairing…"</string>
+    <string name="ui_005" formatted="false">"Securely paired. Translation, speech and dubbing use your computer."</string>
+    <string name="ui_006" formatted="false">"Pairing failed. Show a new QR code, use the same Wi-Fi and check whether the firewall blocks the connection. Keep protection enabled."</string>
+    <string name="ui_007" formatted="false">"Type or record a sentence first."</string>
+    <string name="ui_008" formatted="false">"Choose two different languages."</string>
+    <string name="ui_009" formatted="false">"Sending the sentence for translation…"</string>
+    <string name="ui_010" formatted="false">"Translation complete. Speech plays if a suitable voice is available."</string>
+    <string name="ui_011" formatted="false">"Translation failed: "</string>
+    <string name="ui_012" formatted="false">"Unknown error"</string>
+    <string name="ui_013" formatted="false">"Unreadable file"</string>
+    <string name="ui_014" formatted="false">"Select a valid SRT file up to 500 KB."</string>
+    <string name="ui_015" formatted="false">"SRT file"</string>
+    <string name="ui_016" formatted="false">"Subtitles imported. You can start translation."</string>
+    <string name="ui_017" formatted="false">"Cannot read file: "</string>
+    <string name="ui_018" formatted="false">"Cannot open file for writing"</string>
+    <string name="ui_019" formatted="false">"Translated SRT saved."</string>
+    <string name="ui_020" formatted="false">"Cannot save file: "</string>
+    <string name="ui_021" formatted="false">"Dubbing subtitles saved as SRT."</string>
+    <string name="ui_022" formatted="false">"Cannot save subtitles. Check connection and job readiness."</string>
+    <string name="ui_023" formatted="false">"Video selected. Start dubbing to send it to your server."</string>
+    <string name="ui_024" formatted="false">"Downloading dubbed video…"</string>
+    <string name="ui_025" formatted="false">"Dubbed MP4 saved."</string>
+    <string name="ui_026" formatted="false">"Cannot save video: "</string>
+    <string name="ui_027" formatted="false">"Error"</string>
+    <string name="ui_028" formatted="false">"Home"</string>
+    <string name="ui_029" formatted="false">"Conversation"</string>
+    <string name="ui_030" formatted="false">"Studio"</string>
+    <string name="ui_031" formatted="false">"Settings"</string>
+    <string name="ui_032" formatted="false">"Conversation translator"</string>
+    <string name="ui_033" formatted="false">"Take turns • Speak or type • Listen to the translation"</string>
+    <string name="ui_034" formatted="false">"Original phrase"</string>
+    <string name="ui_035" formatted="false">"Speaker’s words"</string>
+    <string name="ui_036" formatted="false">"Speak into the microphone"</string>
+    <string name="ui_037" formatted="false">"Translate and speak"</string>
+    <string name="ui_038" formatted="false">"Speech translation in segments • Requires ASR and TTS on the computer"</string>
+    <string name="ui_039" formatted="false">"Translated listening"</string>
+    <string name="ui_040" formatted="false">"Audio is processed in 3.2-second segments plus translation and speech latency. Stop the microphone when finished."</string>
+    <string name="ui_041" formatted="false">"Stop voice listening"</string>
+    <string name="ui_042" formatted="false">"Start microphone translation"</string>
+    <string name="ui_043" formatted="false">"Speaker said: "</string>
+    <string name="ui_044" formatted="false">"Speech and video tools"</string>
+    <string name="ui_045" formatted="false">"Speech preview • Not live broadcasting"</string>
+    <string name="ui_046" formatted="false">"Voice-over preview"</string>
+    <string name="ui_047" formatted="false">"Speak in your selected language and listen to the translation. Routing to OBS or broadcasting apps is not available."</string>
+    <string name="ui_048" formatted="false">"Your voice-over"</string>
+    <string name="ui_049" formatted="false">"Record a sentence"</string>
+    <string name="ui_050" formatted="false">"Preview translated voice-over"</string>
+    <string name="ui_051" formatted="false">"Listen again"</string>
+    <string name="ui_052" formatted="false">"MP4 dubbing on your computer or server • Background jobs"</string>
+    <string name="ui_053" formatted="false">"Dub a video into another language"</string>
+    <string name="ui_054" formatted="false">"Select an MP4 up to 80 MB. The computer recognizes speech and creates translated audio. Whisper, Argos and Piper models must be installed."</string>
+    <string name="ui_055" formatted="false">"Select MP4 video"</string>
+    <string name="ui_056" formatted="false">"Start dubbing"</string>
+    <string name="ui_057" formatted="false">"Uploading video…"</string>
+    <string name="ui_058" formatted="false">"Video processing started…"</string>
+    <string name="ui_059" formatted="false">"Dubbing complete. Save the video."</string>
+    <string name="ui_060" formatted="false">"Dubbing safely cancelled."</string>
+    <string name="ui_061" formatted="false">"Dubbing failed: "</string>
+    <string name="ui_062" formatted="false">"Status: "</string>
+    <string name="ui_063" formatted="false">"Dubbing error: "</string>
+    <string name="ui_064" formatted="false">"Save dubbed MP4"</string>
+    <string name="ui_065" formatted="false">"Save dubbing subtitles (SRT)"</string>
+    <string name="ui_066" formatted="false">"Cancel dubbing job"</string>
+    <string name="ui_067" formatted="false">"Cancellation requested. Waiting for the current segment to finish."</string>
+    <string name="ui_068" formatted="false">"Cannot request cancellation. Check connection."</string>
+    <string name="ui_069" formatted="false">"Translate SRT while preserving timing"</string>
+    <string name="ui_070" formatted="false">"Translate video subtitles"</string>
+    <string name="ui_071" formatted="false">"Import, translate and save timed SRT subtitles. For translated audio, use the MP4 dubbing card above."</string>
+    <string name="ui_072" formatted="false">"Select SRT file"</string>
+    <string name="ui_073" formatted="false">"Translate subtitles"</string>
+    <string name="ui_074" formatted="false">"Translating SRT…"</string>
+    <string name="ui_075" formatted="false">"Translation complete. Save the resulting SRT."</string>
+    <string name="ui_076" formatted="false">"Subtitle translation failed: "</string>
+    <string name="ui_077" formatted="false">"Save translated SRT"</string>
+    <string name="ui_078" formatted="false">"Settings and connection"</string>
+    <string name="ui_079" formatted="false">"Secure server • Connection and audio controls"</string>
+    <string name="ui_080" formatted="false">"Pair your computer • No address or key to type"</string>
+    <string name="ui_081" formatted="false">"Enable Android pairing in the computer’s AI Setup Center, then scan its QR code. Use the same Wi-Fi. Processing runs on the computer."</string>
+    <string name="ui_082" formatted="false">"Scan QR to pair computer"</string>
+    <string name="ui_083" formatted="false">"Scan the NEXVARY code on your computer"</string>
+    <string name="ui_084" formatted="false">"Computer paired. Connection key is stored encrypted. The session expires after 8 hours or when pairing is stopped."</string>
+    <string name="ui_085" formatted="false">"Forget computer and stop conversation"</string>
+    <string name="ui_086" formatted="false">"Computer forgotten. Scan a new QR to reconnect."</string>
+    <string name="ui_087" formatted="false">"Configure another server manually (optional)"</string>
+    <string name="ui_088" formatted="false">"API token • Not saved"</string>
+    <string name="ui_089" formatted="false">"Test server connection"</string>
+    <string name="ui_090" formatted="false">"Connected. Verify translation models are installed."</string>
+    <string name="ui_091" formatted="false">"Gateway responds, but its inference engine is unavailable."</string>
+    <string name="ui_092" formatted="false">"Connection failed: "</string>
+    <string name="ui_093" formatted="false">"If the computer address changes or sharing stops, scan a new QR. No VPS is needed on your private network. Manual API keys are not saved."</string>
+    <string name="ui_094" formatted="false">"Audio and speakers"</string>
+    <string name="ui_095" formatted="false">"Android speech services handle short recorded sentences. Live translation uses the computer. Output follows Android audio routing, including paired Bluetooth headsets."</string>
+    <string name="ui_096" formatted="false">"Transcripts are temporary. Speech uses 3.2-second segments plus processing time. Use headphones to reduce echo."</string>
+    <string name="ui_097" formatted="false">"Connected"</string>
+    <string name="ui_098" formatted="false">"Disconnected"</string>
+    <string name="ui_099" formatted="false">"Not tested"</string>
+    <string name="ui_100" formatted="false">"Speak across languages"</string>
+    <string name="ui_101" formatted="false">"Translate conversations, listen to speech and create video subtitles in one studio."</string>
+    <string name="ui_102" formatted="false">"Start a conversation"</string>
+    <string name="ui_103" formatted="false">"Two-way conversation"</string>
+    <string name="ui_104" formatted="false">"Switch languages • Microphone • Text translation and speech"</string>
+    <string name="ui_105" formatted="false">"Voice-over and video studio"</string>
+    <string name="ui_106" formatted="false">"Preview speech, dub MP4 and translate SRT"</string>
+    <string name="ui_107" formatted="false">"Pair your computer"</string>
+    <string name="ui_108" formatted="false">"Scan QR and test connection"</string>
+    <string name="ui_109" formatted="false">"Processing and privacy"</string>
+    <string name="ui_110" formatted="false">"Live speech and MP4 dubbing run on the paired computer. The app does not install AI models on the phone or route audio to other apps."</string>
+    <string name="ui_111" formatted="false">"From"</string>
+    <string name="ui_112" formatted="false">"Swap languages"</string>
+    <string name="ui_113" formatted="false">"To"</string>
+    <string name="ui_114" formatted="false">"Speech translation"</string>
+    <string name="ui_115" formatted="false">"Translation appears here when the request completes."</string>
+    <string name="ui_116" formatted="false">"Listen again"</string>
+    <string name="ui_117" formatted="false">"Reply in the other language"</string>
+    <string name="ui_118" formatted="false">"Interface language"</string>
+    <string name="ui_119" formatted="false">"Changing the interface language does not change the translation languages."</string>
+    <string name="ui_120" formatted="false">"Stopped"</string>
+    <string name="ui_121" formatted="false">"Microphone permission required."</string>
+    <string name="ui_122" formatted="false">"An HTTPS server is required outside debug testing."</string>
+    <string name="ui_123" formatted="false">"This device does not support the required PCM16 audio."</string>
+    <string name="ui_124" formatted="false">"Cannot initialize microphone."</string>
+    <string name="ui_125" formatted="false">"Cannot initialize audio: "</string>
+    <string name="ui_126" formatted="false">"Connecting to speech translator…"</string>
+    <string name="ui_127" formatted="false">"Listening. Speech is processed in 3.2-second segments."</string>
+    <string name="ui_128" formatted="false">"Translation received. Processing time: "</string>
+    <string name="ui_129" formatted="false">" seconds, plus the audio segment."</string>
+    <string name="ui_130" formatted="false">"Translation error: "</string>
+    <string name="ui_131" formatted="false">"Unexpected server response."</string>
+    <string name="ui_132" formatted="false">"Stream disconnected: "</string>
+    <string name="ui_133" formatted="false">"Connection unavailable"</string>
+    <string name="ui_134" formatted="false">"Audio capture could not continue."</string>
+    <string name="ui_135" formatted="false">"Listening stopped."</string>
+    <string name="ui_136" formatted="false">"Device speech engine unavailable."</string>
+    <string name="ui_137" formatted="false">"Device speech recognition unavailable. Type your text."</string>
+    <string name="ui_138" formatted="false">"Speak now…"</string>
+    <string name="ui_139" formatted="false">"Converting speech to text…"</string>
+    <string name="ui_140" formatted="false">"Speech recognition failed (code "</string>
+    <string name="ui_141" formatted="false">"No clear speech detected."</string>
+    <string name="ui_142" formatted="false">"Speech captured. Edit the text before translating."</string>
+    <string name="ui_143" formatted="false">"Translation ready, but device speech is unavailable."</string>
+    <string name="ui_144" formatted="false">"Voice for "</string>
+    <string name="ui_145" formatted="false">" is not installed on this device."</string>
+</resources>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_000" formatted="false">"Доступ к микрофону запрещён."</string>
+    <string name="ui_001" formatted="false">"Сначала проверьте подключение в настройках."</string>
+    <string name="ui_002" formatted="false">"Файл SRT не выбран"</string>
+    <string name="ui_003" formatted="false">"Видео MP4 не выбрано"</string>
+    <string name="ui_004" formatted="false">"Проверка сертификата компьютера и сопряжение…"</string>
+    <string name="ui_005" formatted="false">"Безопасное сопряжение выполнено. Перевод, речь и озвучивание обрабатываются на компьютере."</string>
+    <string name="ui_006" formatted="false">"Не удалось выполнить сопряжение. Покажите новый QR-код, подключитесь к той же сети Wi-Fi и проверьте брандмауэр, не отключая защиту."</string>
+    <string name="ui_007" formatted="false">"Сначала введите или запишите фразу."</string>
+    <string name="ui_008" formatted="false">"Выберите два разных языка."</string>
+    <string name="ui_009" formatted="false">"Отправка фразы на перевод…"</string>
+    <string name="ui_010" formatted="false">"Перевод готов. Речь воспроизводится, если доступен подходящий голос."</string>
+    <string name="ui_011" formatted="false">"Ошибка перевода: "</string>
+    <string name="ui_012" formatted="false">"Неизвестная ошибка"</string>
+    <string name="ui_013" formatted="false">"Файл не читается"</string>
+    <string name="ui_014" formatted="false">"Выберите корректный файл SRT размером до 500 КБ."</string>
+    <string name="ui_015" formatted="false">"Файл SRT"</string>
+    <string name="ui_016" formatted="false">"Субтитры загружены. Можно начать перевод."</string>
+    <string name="ui_017" formatted="false">"Не удалось прочитать файл: "</string>
+    <string name="ui_018" formatted="false">"Не удалось открыть файл для записи"</string>
+    <string name="ui_019" formatted="false">"Переведённый SRT сохранён."</string>
+    <string name="ui_020" formatted="false">"Не удалось сохранить файл: "</string>
+    <string name="ui_021" formatted="false">"Субтитры озвучивания сохранены в SRT."</string>
+    <string name="ui_022" formatted="false">"Не удалось сохранить субтитры. Проверьте подключение и состояние задания."</string>
+    <string name="ui_023" formatted="false">"Видео выбрано. Запустите озвучивание, чтобы отправить его на сервер."</string>
+    <string name="ui_024" formatted="false">"Загрузка озвученного видео…"</string>
+    <string name="ui_025" formatted="false">"Озвученный MP4 сохранён."</string>
+    <string name="ui_026" formatted="false">"Не удалось сохранить видео: "</string>
+    <string name="ui_027" formatted="false">"Ошибка"</string>
+    <string name="ui_028" formatted="false">"Главная"</string>
+    <string name="ui_029" formatted="false">"Разговор"</string>
+    <string name="ui_030" formatted="false">"Студия"</string>
+    <string name="ui_031" formatted="false">"Настройки"</string>
+    <string name="ui_032" formatted="false">"Переводчик разговоров"</string>
+    <string name="ui_033" formatted="false">"По очереди • Говорите или пишите • Слушайте перевод"</string>
+    <string name="ui_034" formatted="false">"Исходная фраза"</string>
+    <string name="ui_035" formatted="false">"Речь собеседника"</string>
+    <string name="ui_036" formatted="false">"Говорить в микрофон"</string>
+    <string name="ui_037" formatted="false">"Перевести и озвучить"</string>
+    <string name="ui_038" formatted="false">"Перевод речи по фрагментам • На компьютере нужны ASR и TTS"</string>
+    <string name="ui_039" formatted="false">"Прослушивание перевода"</string>
+    <string name="ui_040" formatted="false">"Звук обрабатывается фрагментами по 3,2 секунды плюс время перевода и озвучивания. По завершении выключите микрофон."</string>
+    <string name="ui_041" formatted="false">"Остановить прослушивание"</string>
+    <string name="ui_042" formatted="false">"Начать перевод с микрофона"</string>
+    <string name="ui_043" formatted="false">"Собеседник сказал: "</string>
+    <string name="ui_044" formatted="false">"Инструменты речи и видео"</string>
+    <string name="ui_045" formatted="false">"Предпрослушивание речи • Не прямая трансляция"</string>
+    <string name="ui_046" formatted="false">"Предпрослушивание комментария"</string>
+    <string name="ui_047" formatted="false">"Говорите на выбранном языке и слушайте перевод. Передача звука в OBS и приложения трансляции недоступна."</string>
+    <string name="ui_048" formatted="false">"Ваш комментарий"</string>
+    <string name="ui_049" formatted="false">"Записать фразу"</string>
+    <string name="ui_050" formatted="false">"Прослушать переведённый комментарий"</string>
+    <string name="ui_051" formatted="false">"Прослушать снова"</string>
+    <string name="ui_052" formatted="false">"Озвучивание MP4 на компьютере или сервере • Фоновые задания"</string>
+    <string name="ui_053" formatted="false">"Озвучить видео на другом языке"</string>
+    <string name="ui_054" formatted="false">"Выберите MP4 до 80 МБ. Компьютер распознаёт речь и создаёт переведённый звук. Нужны установленные модели Whisper, Argos и Piper."</string>
+    <string name="ui_055" formatted="false">"Выбрать видео MP4"</string>
+    <string name="ui_056" formatted="false">"Начать озвучивание"</string>
+    <string name="ui_057" formatted="false">"Отправка видео…"</string>
+    <string name="ui_058" formatted="false">"Обработка видео началась…"</string>
+    <string name="ui_059" formatted="false">"Озвучивание завершено. Сохраните видео."</string>
+    <string name="ui_060" formatted="false">"Озвучивание безопасно отменено."</string>
+    <string name="ui_061" formatted="false">"Ошибка озвучивания: "</string>
+    <string name="ui_062" formatted="false">"Состояние: "</string>
+    <string name="ui_063" formatted="false">"Ошибка озвучивания: "</string>
+    <string name="ui_064" formatted="false">"Сохранить озвученный MP4"</string>
+    <string name="ui_065" formatted="false">"Сохранить субтитры озвучивания (SRT)"</string>
+    <string name="ui_066" formatted="false">"Отменить задание озвучивания"</string>
+    <string name="ui_067" formatted="false">"Отмена запрошена. Ожидание завершения текущего фрагмента."</string>
+    <string name="ui_068" formatted="false">"Не удалось запросить отмену. Проверьте подключение."</string>
+    <string name="ui_069" formatted="false">"Перевести SRT с сохранением времени"</string>
+    <string name="ui_070" formatted="false">"Перевести субтитры видео"</string>
+    <string name="ui_071" formatted="false">"Загрузите, переведите и сохраните субтитры SRT. Для переведённой озвучки используйте раздел MP4 выше."</string>
+    <string name="ui_072" formatted="false">"Выбрать файл SRT"</string>
+    <string name="ui_073" formatted="false">"Перевести субтитры"</string>
+    <string name="ui_074" formatted="false">"Перевод SRT…"</string>
+    <string name="ui_075" formatted="false">"Перевод готов. Сохраните полученный SRT."</string>
+    <string name="ui_076" formatted="false">"Ошибка перевода субтитров: "</string>
+    <string name="ui_077" formatted="false">"Сохранить переведённый SRT"</string>
+    <string name="ui_078" formatted="false">"Настройки и подключение"</string>
+    <string name="ui_079" formatted="false">"Безопасный сервер • Подключение и звук"</string>
+    <string name="ui_080" formatted="false">"Сопряжение с компьютером • Без ввода адреса и ключа"</string>
+    <string name="ui_081" formatted="false">"Включите сопряжение Android в центре настройки ИИ на компьютере и отсканируйте QR-код. Используйте одну сеть Wi-Fi. Обработка выполняется на компьютере."</string>
+    <string name="ui_082" formatted="false">"Сканировать QR для сопряжения"</string>
+    <string name="ui_083" formatted="false">"Отсканируйте код NEXVARY на компьютере"</string>
+    <string name="ui_084" formatted="false">"Компьютер сопряжён. Ключ хранится зашифрованным. Сеанс заканчивается через 8 часов или при отключении связи."</string>
+    <string name="ui_085" formatted="false">"Забыть компьютер и остановить разговор"</string>
+    <string name="ui_086" formatted="false">"Компьютер забыт. Для подключения отсканируйте новый QR-код."</string>
+    <string name="ui_087" formatted="false">"Настроить другой сервер вручную (необязательно)"</string>
+    <string name="ui_088" formatted="false">"Токен API • Не сохраняется"</string>
+    <string name="ui_089" formatted="false">"Проверить подключение к серверу"</string>
+    <string name="ui_090" formatted="false">"Подключено. Проверьте установку моделей перевода."</string>
+    <string name="ui_091" formatted="false">"Шлюз отвечает, но движок обработки недоступен."</string>
+    <string name="ui_092" formatted="false">"Ошибка подключения: "</string>
+    <string name="ui_093" formatted="false">"Если адрес компьютера изменился или связь отключена, отсканируйте новый QR-код. В частной сети VPS не нужен. Введённые вручную ключи не сохраняются."</string>
+    <string name="ui_094" formatted="false">"Звук и динамики"</string>
+    <string name="ui_095" formatted="false">"Речевые службы Android обрабатывают короткие записи. Потоковый перевод использует компьютер. Вывод следует настройкам Android, включая сопряжённые Bluetooth-наушники."</string>
+    <string name="ui_096" formatted="false">"Тексты временные. Речь обрабатывается фрагментами по 3,2 секунды плюс время обработки. Наушники уменьшают эхо."</string>
+    <string name="ui_097" formatted="false">"Подключено"</string>
+    <string name="ui_098" formatted="false">"Нет подключения"</string>
+    <string name="ui_099" formatted="false">"Не проверено"</string>
+    <string name="ui_100" formatted="false">"Общайтесь без языковых барьеров"</string>
+    <string name="ui_101" formatted="false">"Переводите разговоры, слушайте речь и создавайте субтитры в одной студии."</string>
+    <string name="ui_102" formatted="false">"Начать разговор"</string>
+    <string name="ui_103" formatted="false">"Двусторонний разговор"</string>
+    <string name="ui_104" formatted="false">"Смена языков • Микрофон • Перевод текста и речь"</string>
+    <string name="ui_105" formatted="false">"Студия речи и видео"</string>
+    <string name="ui_106" formatted="false">"Прослушать речь, озвучить MP4 и перевести SRT"</string>
+    <string name="ui_107" formatted="false">"Сопряжение с компьютером"</string>
+    <string name="ui_108" formatted="false">"Сканировать QR и проверить связь"</string>
+    <string name="ui_109" formatted="false">"Обработка и конфиденциальность"</string>
+    <string name="ui_110" formatted="false">"Перевод речи и озвучивание MP4 выполняются на сопряжённом компьютере. Приложение не устанавливает модели ИИ на телефон и не передаёт звук в другие приложения."</string>
+    <string name="ui_111" formatted="false">"С"</string>
+    <string name="ui_112" formatted="false">"Поменять языки"</string>
+    <string name="ui_113" formatted="false">"На"</string>
+    <string name="ui_114" formatted="false">"Перевод речи"</string>
+    <string name="ui_115" formatted="false">"Перевод появится здесь после обработки запроса."</string>
+    <string name="ui_116" formatted="false">"Прослушать снова"</string>
+    <string name="ui_117" formatted="false">"Ответить на другом языке"</string>
+    <string name="ui_118" formatted="false">"Язык интерфейса"</string>
+    <string name="ui_119" formatted="false">"Язык интерфейса не меняет языки перевода."</string>
+    <string name="ui_120" formatted="false">"Остановлено"</string>
+    <string name="ui_121" formatted="false">"Требуется доступ к микрофону."</string>
+    <string name="ui_122" formatted="false">"Вне отладочных тестов требуется HTTPS."</string>
+    <string name="ui_123" formatted="false">"Устройство не поддерживает требуемый звук PCM16."</string>
+    <string name="ui_124" formatted="false">"Не удалось инициализировать микрофон."</string>
+    <string name="ui_125" formatted="false">"Не удалось инициализировать звук: "</string>
+    <string name="ui_126" formatted="false">"Подключение к переводчику речи…"</string>
+    <string name="ui_127" formatted="false">"Прослушивание. Речь обрабатывается фрагментами по 3,2 секунды."</string>
+    <string name="ui_128" formatted="false">"Перевод получен. Время обработки: "</string>
+    <string name="ui_129" formatted="false">" с, плюс длительность звукового фрагмента."</string>
+    <string name="ui_130" formatted="false">"Ошибка перевода: "</string>
+    <string name="ui_131" formatted="false">"Неожиданный ответ сервера."</string>
+    <string name="ui_132" formatted="false">"Потоковое подключение прервано: "</string>
+    <string name="ui_133" formatted="false">"Подключение недоступно"</string>
+    <string name="ui_134" formatted="false">"Не удалось продолжить запись звука."</string>
+    <string name="ui_135" formatted="false">"Прослушивание остановлено."</string>
+    <string name="ui_136" formatted="false">"Речевой движок устройства недоступен."</string>
+    <string name="ui_137" formatted="false">"Распознавание речи недоступно. Введите текст."</string>
+    <string name="ui_138" formatted="false">"Говорите…"</string>
+    <string name="ui_139" formatted="false">"Преобразование речи в текст…"</string>
+    <string name="ui_140" formatted="false">"Ошибка распознавания речи (код "</string>
+    <string name="ui_141" formatted="false">"Разборчивая речь не обнаружена."</string>
+    <string name="ui_142" formatted="false">"Речь распознана. Можно исправить текст перед переводом."</string>
+    <string name="ui_143" formatted="false">"Перевод готов, но озвучивание на устройстве недоступно."</string>
+    <string name="ui_144" formatted="false">"Голос для языка "</string>
+    <string name="ui_145" formatted="false">" не установлен на устройстве."</string>
+</resources>

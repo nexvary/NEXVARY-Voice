@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_000" formatted="false">"Autorisation du microphone refusée."</string>
+    <string name="ui_001" formatted="false">"Testez d’abord la connexion dans les paramètres."</string>
+    <string name="ui_002" formatted="false">"Aucun fichier SRT sélectionné"</string>
+    <string name="ui_003" formatted="false">"Aucune vidéo MP4 sélectionnée"</string>
+    <string name="ui_004" formatted="false">"Vérification du certificat et association…"</string>
+    <string name="ui_005" formatted="false">"Association sécurisée. Traduction, voix et doublage utilisent votre ordinateur."</string>
+    <string name="ui_006" formatted="false">"Échec de l’association. Affichez un nouveau QR, utilisez le même Wi-Fi et vérifiez le pare-feu sans désactiver la protection."</string>
+    <string name="ui_007" formatted="false">"Saisissez ou enregistrez d’abord une phrase."</string>
+    <string name="ui_008" formatted="false">"Choisissez deux langues différentes."</string>
+    <string name="ui_009" formatted="false">"Envoi de la phrase pour traduction…"</string>
+    <string name="ui_010" formatted="false">"Traduction terminée. La voix est lue si elle est disponible."</string>
+    <string name="ui_011" formatted="false">"Échec de la traduction : "</string>
+    <string name="ui_012" formatted="false">"Erreur inconnue"</string>
+    <string name="ui_013" formatted="false">"Fichier illisible"</string>
+    <string name="ui_014" formatted="false">"Choisissez un fichier SRT valide de 500 Ko maximum."</string>
+    <string name="ui_015" formatted="false">"Fichier SRT"</string>
+    <string name="ui_016" formatted="false">"Sous-titres importés. Vous pouvez lancer la traduction."</string>
+    <string name="ui_017" formatted="false">"Impossible de lire le fichier : "</string>
+    <string name="ui_018" formatted="false">"Impossible d’écrire dans le fichier"</string>
+    <string name="ui_019" formatted="false">"Fichier SRT traduit enregistré."</string>
+    <string name="ui_020" formatted="false">"Impossible d’enregistrer le fichier : "</string>
+    <string name="ui_021" formatted="false">"Sous-titres du doublage enregistrés en SRT."</string>
+    <string name="ui_022" formatted="false">"Impossible d’enregistrer les sous-titres. Vérifiez la connexion et la tâche."</string>
+    <string name="ui_023" formatted="false">"Vidéo sélectionnée. Lancez le doublage pour l’envoyer au serveur."</string>
+    <string name="ui_024" formatted="false">"Téléchargement de la vidéo doublée…"</string>
+    <string name="ui_025" formatted="false">"Vidéo MP4 doublée enregistrée."</string>
+    <string name="ui_026" formatted="false">"Impossible d’enregistrer la vidéo : "</string>
+    <string name="ui_027" formatted="false">"Erreur"</string>
+    <string name="ui_028" formatted="false">"Accueil"</string>
+    <string name="ui_029" formatted="false">"Conversation"</string>
+    <string name="ui_030" formatted="false">"Studio"</string>
+    <string name="ui_031" formatted="false">"Paramètres"</string>
+    <string name="ui_032" formatted="false">"Traducteur de conversations"</string>
+    <string name="ui_033" formatted="false">"À tour de rôle • Parlez ou écrivez • Écoutez la traduction"</string>
+    <string name="ui_034" formatted="false">"Phrase originale"</string>
+    <string name="ui_035" formatted="false">"Paroles de l’interlocuteur"</string>
+    <string name="ui_036" formatted="false">"Parler au microphone"</string>
+    <string name="ui_037" formatted="false">"Traduire et lire"</string>
+    <string name="ui_038" formatted="false">"Traduction vocale par segments • ASR et TTS requis sur l’ordinateur"</string>
+    <string name="ui_039" formatted="false">"Écoute traduite"</string>
+    <string name="ui_040" formatted="false">"L’audio est traité par segments de 3,2 secondes, plus le délai de traduction et de synthèse. Arrêtez le microphone à la fin."</string>
+    <string name="ui_041" formatted="false">"Arrêter l’écoute vocale"</string>
+    <string name="ui_042" formatted="false">"Démarrer la traduction au microphone"</string>
+    <string name="ui_043" formatted="false">"L’interlocuteur a dit : "</string>
+    <string name="ui_044" formatted="false">"Outils audio et vidéo"</string>
+    <string name="ui_045" formatted="false">"Aperçu vocal • Pas de diffusion en direct"</string>
+    <string name="ui_046" formatted="false">"Aperçu du commentaire vocal"</string>
+    <string name="ui_047" formatted="false">"Parlez dans la langue choisie et écoutez la traduction. Le routage vers OBS ou les applications de diffusion n’est pas disponible."</string>
+    <string name="ui_048" formatted="false">"Votre commentaire"</string>
+    <string name="ui_049" formatted="false">"Enregistrer une phrase"</string>
+    <string name="ui_050" formatted="false">"Écouter le commentaire traduit"</string>
+    <string name="ui_051" formatted="false">"Réécouter"</string>
+    <string name="ui_052" formatted="false">"Doublage MP4 sur votre ordinateur ou serveur • Traitement par tâches"</string>
+    <string name="ui_053" formatted="false">"Doubler une vidéo dans une autre langue"</string>
+    <string name="ui_054" formatted="false">"Choisissez un MP4 de 80 Mo maximum. L’ordinateur reconnaît la parole et crée une voix traduite. Les modèles Whisper, Argos et Piper sont requis."</string>
+    <string name="ui_055" formatted="false">"Choisir une vidéo MP4"</string>
+    <string name="ui_056" formatted="false">"Démarrer le doublage"</string>
+    <string name="ui_057" formatted="false">"Envoi de la vidéo…"</string>
+    <string name="ui_058" formatted="false">"Traitement vidéo lancé…"</string>
+    <string name="ui_059" formatted="false">"Doublage terminé. Enregistrez la vidéo."</string>
+    <string name="ui_060" formatted="false">"Doublage annulé en sécurité."</string>
+    <string name="ui_061" formatted="false">"Échec du doublage : "</string>
+    <string name="ui_062" formatted="false">"État : "</string>
+    <string name="ui_063" formatted="false">"Erreur de doublage : "</string>
+    <string name="ui_064" formatted="false">"Enregistrer le MP4 doublé"</string>
+    <string name="ui_065" formatted="false">"Enregistrer les sous-titres du doublage (SRT)"</string>
+    <string name="ui_066" formatted="false">"Annuler la tâche de doublage"</string>
+    <string name="ui_067" formatted="false">"Annulation demandée. Attente de la fin du segment actuel."</string>
+    <string name="ui_068" formatted="false">"Impossible de demander l’annulation. Vérifiez la connexion."</string>
+    <string name="ui_069" formatted="false">"Traduire un SRT en conservant les horaires"</string>
+    <string name="ui_070" formatted="false">"Traduire les sous-titres vidéo"</string>
+    <string name="ui_071" formatted="false">"Importez, traduisez et enregistrez les sous-titres SRT. Pour créer la voix traduite, utilisez le doublage MP4 ci-dessus."</string>
+    <string name="ui_072" formatted="false">"Choisir un fichier SRT"</string>
+    <string name="ui_073" formatted="false">"Traduire les sous-titres"</string>
+    <string name="ui_074" formatted="false">"Traduction du SRT…"</string>
+    <string name="ui_075" formatted="false">"Traduction terminée. Enregistrez le SRT obtenu."</string>
+    <string name="ui_076" formatted="false">"Échec de la traduction des sous-titres : "</string>
+    <string name="ui_077" formatted="false">"Enregistrer le SRT traduit"</string>
+    <string name="ui_078" formatted="false">"Paramètres et connexion"</string>
+    <string name="ui_079" formatted="false">"Serveur sécurisé • Connexion et audio"</string>
+    <string name="ui_080" formatted="false">"Associer l’ordinateur • Sans saisir d’adresse ni de clé"</string>
+    <string name="ui_081" formatted="false">"Activez l’association Android dans le centre IA de l’ordinateur, puis scannez le QR. Utilisez le même Wi-Fi. Le traitement reste sur l’ordinateur."</string>
+    <string name="ui_082" formatted="false">"Scanner le QR pour associer l’ordinateur"</string>
+    <string name="ui_083" formatted="false">"Scannez le code NEXVARY sur l’ordinateur"</string>
+    <string name="ui_084" formatted="false">"Ordinateur associé. La clé est stockée chiffrée. La session expire après 8 heures ou à l’arrêt du partage."</string>
+    <string name="ui_085" formatted="false">"Oublier l’ordinateur et arrêter la conversation"</string>
+    <string name="ui_086" formatted="false">"Ordinateur oublié. Scannez un nouveau QR pour reconnecter."</string>
+    <string name="ui_087" formatted="false">"Configurer un autre serveur manuellement (facultatif)"</string>
+    <string name="ui_088" formatted="false">"Jeton API • Non enregistré"</string>
+    <string name="ui_089" formatted="false">"Tester la connexion au serveur"</string>
+    <string name="ui_090" formatted="false">"Connecté. Vérifiez que les modèles sont installés."</string>
+    <string name="ui_091" formatted="false">"La passerelle répond, mais le moteur est indisponible."</string>
+    <string name="ui_092" formatted="false">"Échec de la connexion : "</string>
+    <string name="ui_093" formatted="false">"Si l’adresse change ou le partage s’arrête, scannez un nouveau QR. Aucun VPS n’est requis sur votre réseau privé. Les clés manuelles ne sont pas enregistrées."</string>
+    <string name="ui_094" formatted="false">"Audio et haut-parleurs"</string>
+    <string name="ui_095" formatted="false">"Les services vocaux Android traitent les phrases enregistrées. La traduction en direct utilise l’ordinateur. La sortie suit le routage Android, y compris les casques Bluetooth associés."</string>
+    <string name="ui_096" formatted="false">"Les textes sont temporaires. L’audio utilise des segments de 3,2 secondes plus le traitement. Utilisez un casque pour réduire l’écho."</string>
+    <string name="ui_097" formatted="false">"Connecté"</string>
+    <string name="ui_098" formatted="false">"Déconnecté"</string>
+    <string name="ui_099" formatted="false">"Non testé"</string>
+    <string name="ui_100" formatted="false">"Parlez au-delà des langues"</string>
+    <string name="ui_101" formatted="false">"Traduisez les conversations, écoutez la voix et créez des sous-titres dans un seul studio."</string>
+    <string name="ui_102" formatted="false">"Démarrer une conversation"</string>
+    <string name="ui_103" formatted="false">"Conversation bidirectionnelle"</string>
+    <string name="ui_104" formatted="false">"Changer de langue • Microphone • Traduction et voix"</string>
+    <string name="ui_105" formatted="false">"Studio voix et vidéo"</string>
+    <string name="ui_106" formatted="false">"Écouter la voix, doubler un MP4 et traduire un SRT"</string>
+    <string name="ui_107" formatted="false">"Associer votre ordinateur"</string>
+    <string name="ui_108" formatted="false">"Scanner le QR et tester la connexion"</string>
+    <string name="ui_109" formatted="false">"Traitement et confidentialité"</string>
+    <string name="ui_110" formatted="false">"La traduction vocale et le doublage MP4 utilisent l’ordinateur associé. L’application n’installe pas de modèles IA sur le téléphone et ne route pas le son vers d’autres applications."</string>
+    <string name="ui_111" formatted="false">"De"</string>
+    <string name="ui_112" formatted="false">"Inverser les langues"</string>
+    <string name="ui_113" formatted="false">"Vers"</string>
+    <string name="ui_114" formatted="false">"Traduction vocale"</string>
+    <string name="ui_115" formatted="false">"La traduction apparaîtra ici à la fin de la requête."</string>
+    <string name="ui_116" formatted="false">"Réécouter"</string>
+    <string name="ui_117" formatted="false">"Répondre dans l’autre langue"</string>
+    <string name="ui_118" formatted="false">"Langue de l’interface"</string>
+    <string name="ui_119" formatted="false">"La langue de l’interface ne modifie pas les langues de traduction."</string>
+    <string name="ui_120" formatted="false">"Arrêté"</string>
+    <string name="ui_121" formatted="false">"Autorisation du microphone requise."</string>
+    <string name="ui_122" formatted="false">"Un serveur HTTPS est requis hors des tests Debug."</string>
+    <string name="ui_123" formatted="false">"L’appareil ne prend pas en charge l’audio PCM16 requis."</string>
+    <string name="ui_124" formatted="false">"Impossible d’initialiser le microphone."</string>
+    <string name="ui_125" formatted="false">"Impossible d’initialiser l’audio : "</string>
+    <string name="ui_126" formatted="false">"Connexion au traducteur vocal…"</string>
+    <string name="ui_127" formatted="false">"Écoute active. La parole est traitée par segments de 3,2 secondes."</string>
+    <string name="ui_128" formatted="false">"Traduction reçue. Temps de traitement : "</string>
+    <string name="ui_129" formatted="false">" secondes, en plus du segment audio."</string>
+    <string name="ui_130" formatted="false">"Erreur de traduction : "</string>
+    <string name="ui_131" formatted="false">"Réponse du serveur inattendue."</string>
+    <string name="ui_132" formatted="false">"Flux déconnecté : "</string>
+    <string name="ui_133" formatted="false">"Connexion indisponible"</string>
+    <string name="ui_134" formatted="false">"Impossible de poursuivre l’enregistrement."</string>
+    <string name="ui_135" formatted="false">"Écoute arrêtée."</string>
+    <string name="ui_136" formatted="false">"Synthèse vocale indisponible sur l’appareil."</string>
+    <string name="ui_137" formatted="false">"Reconnaissance vocale indisponible. Saisissez le texte."</string>
+    <string name="ui_138" formatted="false">"Parlez maintenant…"</string>
+    <string name="ui_139" formatted="false">"Conversion de la parole en texte…"</string>
+    <string name="ui_140" formatted="false">"Échec de la reconnaissance vocale (code "</string>
+    <string name="ui_141" formatted="false">"Aucune parole claire détectée."</string>
+    <string name="ui_142" formatted="false">"Parole reconnue. Modifiez le texte avant la traduction."</string>
+    <string name="ui_143" formatted="false">"Traduction prête, mais synthèse vocale indisponible."</string>
+    <string name="ui_144" formatted="false">"Voix pour "</string>
+    <string name="ui_145" formatted="false">" n’est pas installée sur cet appareil."</string>
+</resources>

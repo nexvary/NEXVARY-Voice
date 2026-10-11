@@ -7,15 +7,15 @@ data class Direction(val source: String, val target: String) {
 data class VoiceLanguage(val code: String, val tag: String, val title: String)
 object Languages {
     val choices = listOf(
-        VoiceLanguage("hi", "hi-IN", "الهندية 🇮🇳"),
-        VoiceLanguage("ar", "ar-EG", "العربية 🇪🇬"),
-        VoiceLanguage("en", "en-US", "الإنجليزية 🇺🇸"),
-        VoiceLanguage("tr", "tr-TR", "التركية 🇹🇷"),
-        VoiceLanguage("fr", "fr-FR", "الفرنسية 🇫🇷"),
-        VoiceLanguage("de", "de-DE", "الألمانية 🇩🇪"),
-        VoiceLanguage("es", "es-ES", "الإسبانية 🇪🇸"),
-        VoiceLanguage("it", "it-IT", "الإيطالية 🇮🇹"),
-        VoiceLanguage("ru", "ru-RU", "الروسية 🇷🇺"),
-        VoiceLanguage("bn", "bn-BD", "البنغالية 🇧🇩")
+        VoiceLanguage("hi", "hi-IN", "हिन्दी"),
+        VoiceLanguage("ar", "ar-EG", "العربية"),
+        VoiceLanguage("en", "en-US", "English"),
+        VoiceLanguage("tr", "tr-TR", "Türkçe"),
+        VoiceLanguage("fr", "fr-FR", "Français"),
+        VoiceLanguage("de", "de-DE", "Deutsch"),
+        VoiceLanguage("es", "es-ES", "Español"),
+        VoiceLanguage("it", "it-IT", "Italiano"),
+        VoiceLanguage("ru", "ru-RU", "Русский"),
+        VoiceLanguage("bn", "bn-BD", "বাংলা")
     )
 }

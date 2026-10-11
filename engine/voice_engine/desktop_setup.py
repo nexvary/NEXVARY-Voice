@@ -23,7 +23,7 @@ from .downloads import fetch_verified, digest_file
 from .asset_inventory import voice_map, functional_report
 
 LANG_CODES = ("ar", "en", "it", "ru", "es", "bn")
-RUNTIME_VERSIONS = {"faster-whisper":"1.2.1", "argostranslate":"1.11.0", "piper-tts":"1.8.0", "nexvary-voice-engine":"0.5.3"}
+RUNTIME_VERSIONS = {"faster-whisper":"1.2.1", "argostranslate":"1.11.0", "piper-tts":"1.8.0", "nexvary-voice-engine":"0.6.0"}
 WHISPER_SIZE = {"tiny", "base", "small"}
 FFMPEG_URL = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)

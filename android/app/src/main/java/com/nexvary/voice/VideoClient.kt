@@ -10,7 +10,7 @@ import java.util.UUID
 /** Streams bounded MP4 upload/download without buffering entire videos in Android memory. */
 object VideoClient {
     private fun connection(url: String, token: String): HttpURLConnection {
-        val conn = URL(url).openConnection() as HttpURLConnection
+        val conn = ComputerPairing.connection(url)
         conn.connectTimeout = 15000
         conn.readTimeout = 120000
         if (token.isNotBlank())
@@ -76,10 +76,16 @@ object VideoClient {
         try { return read(conn) } finally { conn.disconnect() }
     }
 
+    fun cancel(endpoint: String, token: String, id: String) {
+        require(Regex("[a-f0-9-]{36}").matches(id))
+        val conn=connection(endpoint.trimEnd('/')+"/v1/dub/jobs/"+id+"/cancel",token)
+        try { conn.requestMethod="POST";conn.doOutput=true;conn.outputStream.close();read(conn) }
+        finally { conn.disconnect() }
+    }
     fun download(context: Context, endpoint: String, token: String,
-                 id: String, target: Uri) {
+                 id: String, target: Uri, subtitles: Boolean = false) {
         require(Regex("[a-f0-9-]{36}").matches(id)) { "معرف المهمة غير صالح" }
-        val conn = connection(endpoint.trimEnd('/') + "/v1/dub/jobs/" + id + "/video", token)
+        val conn = connection(endpoint.trimEnd('/') + "/v1/dub/jobs/" + id + (if (subtitles) "/subtitles" else "/video"), token)
         try {
             if (conn.responseCode != 200) throw IllegalStateException("الملف لم يجهز بعد")
             val sink = context.contentResolver.openOutputStream(target)

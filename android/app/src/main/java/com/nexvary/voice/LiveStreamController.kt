@@ -39,10 +39,7 @@ class LiveStreamController(private val context: Context) {
     private var capture: AudioRecord? = null
     private var speaker: AudioTrack? = null
     private var thread: Thread? = null
-    private val client = OkHttpClient.Builder()
-        .readTimeout(0, TimeUnit.MILLISECONDS)
-        .pingInterval(20, TimeUnit.SECONDS)
-        .build()
+
 
     fun start(url: String, token: String, source: String, target: String) {
         if (running.get()) return
@@ -93,7 +90,7 @@ class LiveStreamController(private val context: Context) {
         running.set(true)
         active = true
         state = "جارٍ الاتصال بالمترجم الصوتي…"
-        socket = client.newWebSocket(request, object : WebSocketListener() {
+        socket = ComputerPairing.client(raw).readTimeout(0, TimeUnit.MILLISECONDS).pingInterval(20, TimeUnit.SECONDS).build().newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 val hello = JSONObject()
                     .put("source_language", source).put("target_language", target)
@@ -109,7 +106,7 @@ class LiveStreamController(private val context: Context) {
                     if (data.optString("type") == "translated") {
                         original = data.optString("original_text")
                         translated = data.optString("translated_text")
-                        state = "وصلت الترجمة الصوتية."
+                        state = "وصلت الترجمة. زمن المعالجة: " + data.optDouble("processing_seconds",0.0) + " ثانية، إضافة إلى المقطع الصوتي."
                     } else if (data.optString("type") == "error") {
                         state = "عطل في الترجمة: " + data.optString("message")
                     }

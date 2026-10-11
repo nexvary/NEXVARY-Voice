@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.CompositionLocalProvider
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -62,7 +64,16 @@ private val voiceTheme = darkColorScheme(
 
 @Composable
 fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
-    val context = LocalContext.current
+    val baseContext = LocalContext.current
+    val languagePrefs = remember { baseContext.getSharedPreferences("interface_language",Context.MODE_PRIVATE) }
+    var uiLanguage by rememberSaveable { mutableStateOf(languagePrefs.getString("language","ar")?.takeIf { it in setOf("ar","en","fr","de","ru") } ?: "ar") }
+    val context = remember(uiLanguage) {
+        val config=android.content.res.Configuration(baseContext.resources.configuration)
+        val locale=java.util.Locale.forLanguageTag(uiLanguage)
+        config.setLocale(locale);config.setLayoutDirection(locale)
+        baseContext.createConfigurationContext(config)
+    }
+    val paired = remember { ComputerPairing.restore(context) }
     val prefs = remember { context.getSharedPreferences("voice_config", Context.MODE_PRIVATE) }
     val live = remember { LiveStreamController(context.applicationContext) }
     var requestLive by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -75,9 +86,9 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
     val debug = remember { (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0 }
     var page by rememberSaveable { mutableIntStateOf(0) }
     var endpoint by rememberSaveable {
-        mutableStateOf(prefs.getString("endpoint", if (debug) "http://10.0.2.2:8000" else "") ?: "")
+        mutableStateOf(paired?.endpoint ?: prefs.getString("endpoint", if (debug) "http://10.0.2.2:8000" else "") ?: "")
     }
-    var token by remember { mutableStateOf("") } // Do not persist bearer tokens.
+    var token by remember { mutableStateOf(paired?.token ?: "") } // Paired token is encrypted in Android Keystore storage.
     var from by rememberSaveable { mutableStateOf("hi") }
     var to by rememberSaveable { mutableStateOf("ar") }
     var conversationInput by rememberSaveable { mutableStateOf("") }
@@ -96,8 +107,25 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
     var videoJobId by remember { mutableStateOf("") }
     var videoState by remember { mutableStateOf("") }
     var videoBusy by remember { mutableStateOf(false) }
+    var videoComplete by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val pair = Direction(from, to)
+    val scanComputer = rememberLauncherForActivityResult(ScanContract()) { result ->
+        result.contents?.let { raw ->
+            scope.launch {
+                busy=true;status="جارٍ التحقق من شهادة الكمبيوتر والاقتران…"
+                try {
+                    val session=withContext(Dispatchers.IO) { ComputerPairing.pair(context,PairingPayload.parse(raw)) }
+                    endpoint=session.endpoint;token=session.token
+                    prefs.edit().putString("endpoint",endpoint).apply()
+                    connected=withContext(Dispatchers.IO) { TranslationClient.health(endpoint,token) }
+                    status="تم الاقتران الآمن. يمكنك استخدام الترجمة والصوت والدبلجة عبر الكمبيوتر."
+                } catch (_:Exception) {
+                    connected=false;status="تعذر الاقتران. اعرض QR جديدًا، وتأكد من نفس Wi-Fi وعدم منع الاتصال بواسطة Firewall. لا تعطل الحماية."
+                } finally { busy=false }
+            }
+        }
+    }
 
     fun doTranslate(input: String, preview: Boolean) {
         if (busy) return
@@ -149,11 +177,21 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
         }
     }
 
+    val saveDubSrt = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/x-subrip")) { uri ->
+        if(uri!=null && videoJobId.isNotBlank()) scope.launch {
+            try {
+                withContext(Dispatchers.IO) { VideoClient.download(context,endpoint,token,videoJobId,uri,subtitles=true) }
+                videoState="تم حفظ ملف SRT الزمني للدبلجة."
+            } catch(_:Exception) { videoState="تعذر حفظ ملف الترجمة؛ تحقق من الاتصال وجاهزية المهمة." }
+        }
+    }
+
     val pickMp4 = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             videoUri = uri
             videoName = uri.lastPathSegment?.takeLast(70) ?: "video.mp4"
             videoJobId = ""
+            videoComplete=false
             videoState = "تم اختيار الفيديو. اضغط بدء الدبلجة لإرساله إلى خادمك."
         }
     }
@@ -173,7 +211,7 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
         }
     }
 
-    CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides LayoutDirection.Rtl) {
+    CompositionLocalProvider(LocalContext provides context, androidx.compose.ui.platform.LocalLayoutDirection provides if(uiLanguage=="ar") LayoutDirection.Rtl else LayoutDirection.Ltr) {
         MaterialTheme(colorScheme = voiceTheme) {
             Scaffold(
                 containerColor = Ink,
@@ -189,8 +227,8 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                             NavigationBarItem(
                                 selected = page == id,
                                 onClick = { page = id },
-                                icon = { Icon(icon, contentDescription = title) },
-                                label = { Text(title, fontSize = 11.sp) },
+                                icon = { ColorfulIcon(icon, contentDescription = ui(title)) },
+                                label = { Text(ui(title), fontSize = 11.sp) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Ink, selectedTextColor = Gold,
                                     indicatorColor = Gold, unselectedIconColor = Muted,
@@ -223,11 +261,11 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                     val temporary = from; from = to; to = temporary
                                 })
                                 GlassCard {
-                                    Text("العبارة الأصلية", color = Gold, fontWeight = FontWeight.SemiBold)
+                                    Text(ui("العبارة الأصلية"), color = Gold, fontWeight = FontWeight.SemiBold)
                                     OutlinedTextField(
                                         value = conversationInput, onValueChange = { conversationInput = it },
                                         modifier = Modifier.fillMaxWidth(),
-                                        label = { Text("كلام المتحدث") }, minLines = 3,
+                                        label = { Text(ui("كلام المتحدث")) }, minLines = 3,
                                         colors = inputColors()
                                     )
                                     ActionButton("التحدث بالميكروفون", Icons.Rounded.Mic, false,
@@ -241,9 +279,9 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                 }
                                 GlassCard {
                                     StatusTag("ترجمة صوتية حقيقية متتابعة • تحتاج خادم ASR وTTS", Aqua)
-                                    Text("الاستماع المترجم", fontSize = 18.sp,
+                                    Text(ui("الاستماع المترجم"), fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold, color = Silver)
-                                    Text("يعالج الخادم الصوت كل 3.2 ثانية، مع تأخير إضافي للترجمة والنطق. أوقف الميكروفون عند انتهاء الحوار.",
+                                    Text(ui("يعالج الخادم الصوت كل 3.2 ثانية، مع تأخير إضافي للترجمة والنطق. أوقف الميكروفون عند انتهاء الحوار."),
                                         color = Muted, fontSize = 12.sp)
                                     ActionButton(
                                         if (live.active) "إيقاف الاستماع الصوتي" else "بدء الترجمة من الميكروفون",
@@ -265,9 +303,9 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                             }
                                         }
                                     }
-                                    Text(live.state, color = Aqua, fontSize = 12.sp)
+                                    Text(ui(live.state), color = Aqua, fontSize = 12.sp)
                                     if (live.translated.isNotBlank()) {
-                                        Text("قال المتحدث: " + live.original, fontSize = 12.sp, color = Muted)
+                                        Text(ui("قال المتحدث: ") + live.original, fontSize = 12.sp, color = Muted)
                                         Text(live.translated, fontSize = 20.sp, color = Silver)
                                     }
                                 }
@@ -284,13 +322,13 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                 })
                                 GlassCard {
                                     StatusTag("معاينة ترجمة صوتية — ليست بثًا مباشرًا", Warning)
-                                    Text("تجربة التعليق الصوتي", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                    Text("تحدث بالعربية أو بأي لغة محددة، واستمع للصوت المترجم. توجيه الصوت إلى OBS أو تطبيقات البث ليس مفعّلًا بعد.",
+                                    Text(ui("تجربة التعليق الصوتي"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                    Text(ui("تحدث بالعربية أو بأي لغة محددة، واستمع للصوت المترجم. توجيه الصوت إلى OBS أو تطبيقات البث ليس مفعّلًا بعد."),
                                         color = Muted, fontSize = 13.sp)
                                     OutlinedTextField(
                                         value = previewInput, onValueChange = { previewInput = it },
                                         modifier = Modifier.fillMaxWidth(),
-                                        label = { Text("تعليقك الصوتي") }, minLines = 2, colors = inputColors()
+                                        label = { Text(ui("تعليقك الصوتي")) }, minLines = 2, colors = inputColors()
                                     )
                                     ActionButton("تسجيل جملة", Icons.Rounded.Mic, false, audio.listening) {
                                         if (audio.listening) audio.stop() else onListen(languageTag(from))
@@ -301,15 +339,15 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                     previewResult?.let {
                                         Text(it.translatedText, color = Silver, fontSize = 18.sp)
                                         TextButton(onClick = { audio.speak(it.translatedText, it.target) }) {
-                                            Text("إعادة الاستماع", color = Aqua)
+                                            Text(ui("إعادة الاستماع"), color = Aqua)
                                         }
                                     }
                                 }
                                 GlassCard {
-                                    StatusTag("دبلجة MP4 عبر خادم Ubuntu • تعمل بنظام المهام", Aqua)
-                                    Text("دبلجة فيديو إلى لغة أخرى", fontSize = 18.sp,
+                                    StatusTag("دبلجة MP4 على الكمبيوتر أو الخادم — مهام معالجة", Aqua)
+                                    Text(ui("دبلجة فيديو إلى لغة أخرى"), fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold, color = Silver)
-                                    Text("استيراد MP4 بحجم لا يتجاوز 80 ميجابايت. يعالج الخادم الكلام وينشئ صوتًا مترجمًا جديدًا، ثم يمكنك تنزيل الفيديو. يلزم تثبيت نماذج Whisper وArgos وPiper على الخادم.",
+                                    Text(ui("استيراد MP4 بحجم لا يتجاوز 80 ميجابايت. يعالج الخادم الكلام وينشئ صوتًا مترجمًا جديدًا، ثم يمكنك تنزيل الفيديو. يلزم تثبيت نماذج Whisper وArgos وPiper على الخادم."),
                                         color = Muted, fontSize = 12.sp)
                                     Text(videoName, color = Aqua, fontSize = 12.sp)
                                     ActionButton("اختيار فيديو MP4", Icons.Rounded.FileOpen, false, false) {
@@ -320,6 +358,7 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                         val picked = videoUri
                                         if (!videoBusy && picked != null && pair.isValid()) {
                                             videoBusy = true
+                                            videoComplete=false
                                             videoState = "رفع الفيديو إلى الخادم..."
                                             scope.launch {
                                                 try {
@@ -335,7 +374,12 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                                         val state = result.optString("status")
                                                         when (state) {
                                                             "complete" -> {
+                                                                videoComplete=true
                                                                 videoState = "اكتملت الدبلجة؛ احفظ الفيديو."
+                                                                break
+                                                            }
+                                                            "cancelled" -> {
+                                                                videoState="تم إلغاء الدبلجة بأمان."
                                                                 break
                                                             }
                                                             "failed" -> {
@@ -351,21 +395,34 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                             }
                                         }
                                     }
-                                    if (videoJobId.isNotBlank() && videoState.contains("اكتملت")) {
+                                    if (videoJobId.isNotBlank() && videoComplete) {
                                         ActionButton("حفظ الفيديو المترجم MP4", Icons.Rounded.FileDownload,
                                             false, false) {
                                             saveMp4.launch("NEXVARY-Voice-Dubbed.mp4")
                                         }
+                                        ActionButton("حفظ SRT الزمني للدبلجة",Icons.Rounded.Subtitles,false,false) {
+                                            saveDubSrt.launch("NEXVARY-Voice-Dubbed.srt")
+                                        }
                                     }
-                                    if (videoState.isNotBlank()) Text(videoState, color = Aqua,
+                                    if(videoBusy && videoJobId.isNotBlank()) {
+                                        ActionButton("إلغاء مهمة الدبلجة",Icons.Rounded.Cancel,false,false) {
+                                            scope.launch {
+                                                try {
+                                                    withContext(Dispatchers.IO) { VideoClient.cancel(endpoint,token,videoJobId) }
+                                                    videoState="تم طلب الإلغاء الآمن؛ ننتظر انتهاء المقطع الجاري."
+                                                } catch(_:Exception) { videoState="تعذر إرسال طلب الإلغاء؛ تحقق من الاتصال." }
+                                            }
+                                        }
+                                    }
+                                    if (videoState.isNotBlank()) Text(ui(videoState), color = Aqua,
                                         fontSize = 12.sp)
                                 }
                                 GlassCard {
-                                    StatusTag("ترجمة ملف SRT — الدبلجة الصوتية الكاملة قيد التطوير", Blue)
-                                    Text("ترجمة نصوص الفيديو", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                    Text("استيراد الترجمة الزمنية SRT، ترجمتها مع الحفاظ على التوقيت، ثم حفظها. لا يتم توليد صوت جديد للفيديو في هذا الإصدار.",
+                                    StatusTag("ترجمة ملف SRT مع الحفاظ على التوقيت", Blue)
+                                    Text(ui("ترجمة نصوص الفيديو"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                    Text(ui("استيراد الترجمة الزمنية SRT، ترجمتها مع الحفاظ على التوقيت، ثم حفظها. لتوليد الصوت المترجم استخدم بطاقة دبلجة MP4 أعلاه."),
                                         color = Muted, fontSize = 13.sp)
-                                    Text(srtLabel, color = Aqua, fontSize = 12.sp)
+                                    Text(ui(srtLabel), color = Aqua, fontSize = 12.sp)
                                     ActionButton("اختيار ملف SRT", Icons.Rounded.FileOpen, false, false) {
                                         importSrt.launch(arrayOf("text/*", "application/x-subrip", "*/*"))
                                     }
@@ -396,7 +453,36 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                             else -> {
                                 ScreenTitle("الإعدادات والاتصال", "الخادم الآمن • التحكم في الحساب والصوت")
                                 GlassCard {
-                                    Text("عنوان محرك الترجمة", fontWeight = FontWeight.SemiBold, color = Gold)
+                                    Text(ui("لغة الواجهة"),fontWeight=FontWeight.Bold,color=Gold)
+                                    var languageMenu by remember { mutableStateOf(false) }
+                                    val interfaceChoices=listOf("ar" to "العربية","en" to "English","fr" to "Français","de" to "Deutsch","ru" to "Русский")
+                                    Box(Modifier.fillMaxWidth()) {
+                                        OutlinedButton(onClick={languageMenu=true},modifier=Modifier.fillMaxWidth()) {
+                                            Text(interfaceChoices.first { it.first==uiLanguage }.second,color=Gold)
+                                        }
+                                        DropdownMenu(expanded=languageMenu,onDismissRequest={languageMenu=false}) {
+                                            interfaceChoices.forEach { (code,name) ->
+                                                DropdownMenuItem(text={Text(name)},onClick={uiLanguage=code;languageMenu=false;languagePrefs.edit().putString("language",code).apply()})
+                                            }
+                                        }
+                                    }
+                                    Text(ui("تغيير اللغة لا يغيّر لغتي الترجمة."),color=Muted,fontSize=12.sp)
+                                }
+                                GlassCard {
+                                    Text(ui("ربط الكمبيوتر — دون كتابة عنوان أو مفتاح"), fontWeight = FontWeight.SemiBold, color = Gold)
+                                    Text(ui("افتح مركز إعداد الذكاء الاصطناعي على الكمبيوتر، فعّل ربط Android، ثم امسح الرمز. يلزم نفس Wi-Fi. تتم المعالجة على الكمبيوتر."),color=Muted)
+                                    ActionButton("مسح QR لربط الكمبيوتر",Icons.Rounded.QrCodeScanner,true,busy) {
+                                        scanComputer.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                            .setPrompt(UiStrings.render("امسح رمز NEXVARY الظاهر على الكمبيوتر",context)).setBeepEnabled(false).setOrientationLocked(false))
+                                    }
+                                    if(ComputerPairing.active!=null) {
+                                        Text(ui("الكمبيوتر مقترن؛ مفتاح الاتصال محفوظ مشفرًا. تنتهي الجلسة بعد 8 ساعات أو عند إيقاف الربط."),color=Aqua)
+                                        ActionButton("نسيان الكمبيوتر وإيقاف المحادثة",Icons.Rounded.LinkOff,false,busy) {
+                                            live.stop();ComputerPairing.forget(context);token="";endpoint="";connected=null
+                                            prefs.edit().remove("endpoint").apply();status="تم نسيان الكمبيوتر. أعد مسح QR للربط."
+                                        }
+                                    } else {
+                                    Text(ui("إعداد خادم آخر يدويًا (اختياري)"),fontWeight=FontWeight.SemiBold,color=Gold)
                                     OutlinedTextField(
                                         value = endpoint, onValueChange = {
                                             endpoint = it; connected = null
@@ -410,12 +496,13 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                     OutlinedTextField(
                                         value = token, onValueChange = { token = it },
                                         modifier = Modifier.fillMaxWidth(),
-                                        label = { Text("API Token — لا يتم حفظه") },
+                                        label = { Text(ui("API Token — لا يتم حفظه")) },
                                         singleLine = true,
                                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                                         textStyle = TextStyle(textDirection = TextDirection.Ltr),
                                         colors = inputColors()
                                     )
+                                    }
                                     ActionButton("اختبار اتصال الخادم", Icons.Rounded.Cloud, true, busy) {
                                         scope.launch {
                                             busy = true
@@ -430,20 +517,20 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                             } finally { busy = false }
                                         }
                                     }
-                                    Text("رابط المحاكي الافتراضي لا يعمل على الهاتف الحقيقي. يوصى بخادم Ubuntu خلف HTTPS. مفاتيح API لا تُحفظ بعد إغلاق التطبيق.",
+                                    Text(ui("إذا تغير عنوان الكمبيوتر أو أُغلق الربط، اعرض QR جديدًا. لا تحتاج إلى VPS للربط على الشبكة الخاصة. مفاتيح الخادم اليدوية لا تُحفظ."),
                                         color = Muted, fontSize = 12.sp)
                                 }
                                 GlassCard {
-                                    Text("الصوت والسماعات", fontWeight = FontWeight.Bold)
-                                    Text("يُستخدم ميكروفون وخدمة تعرف الكلام في Android، ويخرج الصوت عبر المسار الذي يحدده النظام بما فيه سماعات Bluetooth المقترنة.",
+                                    Text(ui("الصوت والسماعات"), fontWeight = FontWeight.Bold)
+                                    Text(ui("تستخدم الجمل المسجلة خدمات الكلام في Android. تستخدم الترجمة الصوتية المتتابعة محرك الكمبيوتر. يخرج الصوت عبر مسار Android بما فيه سماعات Bluetooth المقترنة."),
                                         color = Muted)
-                                    Text("المحادثات محفوظة في الشاشة مؤقتًا فقط، ولا تتوفر ميزة الاستماع المتزامن في هذه النسخة.",
+                                    Text(ui("النصوص مؤقتة؛ الترجمة الصوتية تعمل بمقاطع 3.2 ثانية إضافة إلى زمن المعالجة. استخدم سماعة رأس لتقليل الصدى."),
                                         color = Muted, fontSize = 12.sp)
                                 }
                             }
                         }
                         if (audio.message.isNotBlank() && (page == 1 || page == 2)) {
-                            Text(audio.message, color = Aqua, fontSize = 12.sp)
+                            Text(ui(audio.message), color = Aqua, fontSize = 12.sp)
                         }
                         StatusNotice(status)
                         Spacer(Modifier.height(8.dp))
@@ -461,7 +548,7 @@ private fun languageTag(code: String): String =
 private fun BrandHeader(connected: Boolean?) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Surface(shape = RoundedCornerShape(18.dp), color = Gold) {
-            Icon(Icons.Rounded.GraphicEq, "NEXVARY", tint = Ink,
+            ColorfulIcon(Icons.Rounded.GraphicEq, "NEXVARY", tint = Ink,
                 modifier = Modifier.padding(11.dp).size(32.dp))
         }
         Spacer(Modifier.width(12.dp))
@@ -475,7 +562,7 @@ private fun BrandHeader(connected: Boolean?) {
             border = BorderStroke(1.dp, Edge)
         ) {
             Text(
-                when (connected) { true -> "● متصل"; false -> "● غير متصل"; null -> "◌ غير مختبر" },
+                ui(when (connected) { true -> "● متصل"; false -> "● غير متصل"; null -> "◌ غير مختبر" }),
                 color = when (connected) { true -> Aqua; false -> Warning; null -> Muted },
                 fontSize = 11.sp,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
@@ -487,8 +574,8 @@ private fun BrandHeader(connected: Boolean?) {
 @Composable
 private fun ScreenTitle(title: String, description: String) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, fontSize = 25.sp, fontWeight = FontWeight.Bold, color = Silver)
-        Text(description, color = Muted, fontSize = 13.sp)
+        Text(ui(title), fontSize = 25.sp, fontWeight = FontWeight.Bold, color = Silver)
+        Text(ui(description), color = Muted, fontSize = 13.sp)
     }
 }
 
@@ -520,22 +607,22 @@ private fun HomeScreen(onConversation: () -> Unit, onStudio: () -> Unit, onSetti
     ) {
         Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatusTag("VOICE INTELLIGENCE", Aqua)
-            Text("تواصل بلا حواجز لغوية", color = Silver, fontSize = 29.sp,
+            Text(ui("تواصل بلا حواجز لغوية"), color = Silver, fontSize = 29.sp,
                 fontWeight = FontWeight.Black, lineHeight = 36.sp)
-            Text("ترجمة محادثاتك ونطقها بالصوت، وتجهيز الترجمة الزمنية للفيديو في تجربة عربية متكاملة.",
+            Text(ui("ترجمة المحادثات ونطقها ودبلجة MP4 وترجمة SRT داخل استوديو واحد."),
                 color = Muted, fontSize = 15.sp, lineHeight = 25.sp)
             ActionButton("ابدأ محادثة", Icons.Rounded.ArrowForward, true, false, onConversation)
         }
     }
     FeatureCard("محادثة ثنائية الاتجاه", "تبديل اللغات، ميكروفون، ترجمة نصية ونطق صوتي",
         Icons.Rounded.Translate, Aqua, onConversation)
-    FeatureCard("استوديو التعليق والفيديو", "معاينة صوت مترجم وتحويل ملفات SRT",
+    FeatureCard("استوديو التعليق والفيديو", "معاينة الصوت ودبلجة MP4 وترجمة SRT",
         Icons.Rounded.Movie, Blue, onStudio)
-    FeatureCard("محرك الترجمة على Ubuntu", "ضبط عنوان الخادم وفحص الاتصال",
+    FeatureCard("ربط الكمبيوتر", "ضبط عنوان الخادم وفحص الاتصال",
         Icons.Rounded.Cloud, Gold, onSettings)
     GlassCard {
-        Text("حالة المنتج", color = Gold, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        Text("إصدار تأسيسي محسّن: لا يدّعي دبلجة صوت كاملة أو توجيه صوت مباشر للبث. هذه الوظائف ضمن خارطة التطوير.",
+        Text(ui("المعالجة والخصوصية"), color = Gold, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Text(ui("تعمل الترجمة الصوتية ودبلجة MP4 على الكمبيوتر المقترن. لا يثبّت التطبيق نماذج الذكاء الاصطناعي داخل الهاتف ولا يوجه الصوت إلى تطبيقات أخرى."),
             fontSize = 13.sp, color = Muted)
     }
 }
@@ -552,13 +639,13 @@ private fun FeatureCard(title: String, detail: String, icon: ImageVector, color:
             horizontalArrangement = Arrangement.spacedBy(13.dp)
         ) {
             Surface(color = color.copy(alpha = 0.13f), shape = RoundedCornerShape(15.dp)) {
-                Icon(icon, title, tint = color, modifier = Modifier.padding(13.dp).size(28.dp))
+                ColorfulIcon(icon, title, tint = color, modifier = Modifier.padding(13.dp).size(28.dp))
             }
             Column(Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Silver)
-                Text(detail, color = Muted, fontSize = 12.sp, lineHeight = 19.sp)
+                Text(ui(title), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Silver)
+                Text(ui(detail), color = Muted, fontSize = 12.sp, lineHeight = 19.sp)
             }
-            Icon(Icons.Rounded.ChevronLeft, null, tint = color)
+            ColorfulIcon(Icons.Rounded.ChevronLeft, null, tint = color)
         }
     }
 }
@@ -572,7 +659,7 @@ private fun LanguagePair(
             horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Box(Modifier.weight(1f)) { LanguageMenu("من", from, setFrom) }
             IconButton(onClick = swap) {
-                Icon(Icons.Rounded.SwapHoriz, "تبديل اللغتين", tint = Gold, modifier = Modifier.size(27.dp))
+                ColorfulIcon(Icons.Rounded.SwapHoriz, "تبديل اللغتين", tint = Gold, modifier = Modifier.size(27.dp))
             }
             Box(Modifier.weight(1f)) { LanguageMenu("إلى", to, setTo) }
         }
@@ -584,12 +671,12 @@ private fun LanguageMenu(label: String, selected: String, onSelected: (String) -
     var expanded by remember { mutableStateOf(false) }
     val current = Languages.choices.firstOrNull { it.code == selected }
     Column {
-        Text(label, fontSize = 11.sp, color = Muted)
+        Text(ui(label), fontSize = 11.sp, color = Muted)
         OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Silver),
             border = BorderStroke(1.dp, Edge)) {
             Text(current?.title ?: selected, fontSize = 12.sp, maxLines = 1)
-            Icon(Icons.Rounded.ArrowDropDown, null, tint = Gold, modifier = Modifier.size(18.dp))
+            ColorfulIcon(Icons.Rounded.ArrowDropDown, null, tint = Gold, modifier = Modifier.size(18.dp))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             Languages.choices.forEach { language ->
@@ -606,7 +693,7 @@ private fun LanguageMenu(label: String, selected: String, onSelected: (String) -
 private fun StatusTag(label: String, color: Color) {
     Surface(color = color.copy(alpha = 0.12f), shape = RoundedCornerShape(50),
         border = BorderStroke(1.dp, color.copy(alpha = 0.35f))) {
-        Text(label, color = color, fontSize = 11.sp,
+        Text(ui(label), color = color, fontSize = 11.sp,
             modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp))
     }
 }
@@ -623,29 +710,29 @@ private fun ActionButton(
         ),
         shape = RoundedCornerShape(14.dp)
     ) {
-        Icon(icon, title, modifier = Modifier.size(21.dp))
+        ColorfulIcon(icon, title, modifier = Modifier.size(21.dp))
         Spacer(Modifier.width(8.dp))
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text(ui(title), fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }
 }
 
 @Composable
 private fun ResultCard(result: VoiceResult?, audio: VoiceAudioController, onReply: () -> Unit) {
     GlassCard {
-        Text("الترجمة الصوتية", color = Gold, fontWeight = FontWeight.Bold)
+        Text(ui("الترجمة الصوتية"), color = Gold, fontWeight = FontWeight.Bold)
         if (result == null) {
-            Text("ستظهر الترجمة هنا فور إتمام الطلب.", color = Muted)
+            Text(ui("ستظهر الترجمة هنا فور إتمام الطلب."), color = Muted)
         } else {
             Text(result.translatedText, fontSize = 21.sp, color = Silver,
                 fontWeight = FontWeight.Medium, lineHeight = 32.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = { audio.speak(result.translatedText, result.target) }) {
-                    Icon(Icons.Rounded.VolumeUp, null, tint = Aqua)
-                    Text("استمع مجددًا", color = Aqua, fontSize = 12.sp)
+                    ColorfulIcon(Icons.Rounded.VolumeUp, null, tint = Aqua)
+                    Text(ui("استمع مجددًا"), color = Aqua, fontSize = 12.sp)
                 }
                 TextButton(onClick = onReply) {
-                    Icon(Icons.Rounded.SwapHoriz, null, tint = Gold)
-                    Text("رد باللغة الأخرى", color = Gold, fontSize = 12.sp)
+                    ColorfulIcon(Icons.Rounded.SwapHoriz, null, tint = Gold)
+                    Text(ui("رد باللغة الأخرى"), color = Gold, fontSize = 12.sp)
                 }
             }
         }
@@ -657,9 +744,9 @@ private fun StatusNotice(value: String) {
     Surface(color = Color(0xFF16263B), shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, Edge)) {
         Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.Info, null, tint = Blue, modifier = Modifier.size(19.dp))
+            ColorfulIcon(Icons.Rounded.Info, null, tint = Blue, modifier = Modifier.size(19.dp))
             Spacer(Modifier.width(9.dp))
-            Text(value, color = Silver, fontSize = 12.sp, lineHeight = 20.sp)
+            Text(ui(value), color = Silver, fontSize = 12.sp, lineHeight = 20.sp)
         }
     }
 }

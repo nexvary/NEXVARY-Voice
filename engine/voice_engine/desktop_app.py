@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QFrame, QHBoxLayout, QVBoxLayout,
     QGridLayout, QLabel, QPushButton, QLineEdit, QTextEdit, QComboBox,
     QStackedWidget, QFileDialog, QMessageBox, QScrollArea, QProgressBar,
-    QSpacerItem, QSizePolicy, QCheckBox
+    QSpacerItem, QSizePolicy, QCheckBox, QDialog
 )
 
 from .desktop_api import DesktopAPI, ClientError, websocket_url
@@ -162,6 +162,8 @@ class VoiceWindow(QMainWindow):
         self.setMinimumSize(780, 560)
         self.engine_manager = desktop_setup.EngineManager()
         self._engine_busy = False
+        self.phone_bridge = None
+        self._phone_busy = False
         self._history = []
         self._tasks: list[JobThread] = []
         self._live: LiveThread | None = None
@@ -213,7 +215,7 @@ class VoiceWindow(QMainWindow):
         back = button("رجوع", "swap", primary=False)
         back.clicked.connect(self._back)
         side.addWidget(back)
-        side.addWidget(title("DESKTOP EDITION  •  v0.5.3", muted=True, point=10))
+        side.addWidget(title("DESKTOP EDITION  •  v0.6.0", muted=True, point=10))
         side.addWidget(title("Windows 10 / 11", muted=True, point=10))
 
         main = QFrame()
@@ -509,7 +511,64 @@ class VoiceWindow(QMainWindow):
         self.quality.currentTextChanged.connect(self._quality_changed)
         form.addWidget(title("جودة Whisper — تُطبق بعد تجهيز النموذج وإعادة تشغيل المحرك",point=12))
         form.addWidget(self.quality)
-        col.addWidget(panel); col.addStretch(); return scroll
+        phone, phone_form = card()
+        phone_form.addWidget(title("ربط هاتف Android",point=18))
+        phone_form.addWidget(title("فعّل الربط على شبكة Wi-Fi الخاصة ثم امسح QR من الهاتف. لا تتغير إعدادات Firewall.",muted=True,point=11))
+        from .phone_bridge import interfaces
+        self.phone_network = QComboBox()
+        for name, address in interfaces(): self.phone_network.addItem(name + " — " + address,address)
+        phone_form.addWidget(self.phone_network)
+        self.phone_status = title("ربط الهاتف متوقف",muted=True,point=11);phone_form.addWidget(self.phone_status)
+        self.phone_start = button("تفعيل الربط وعرض QR", "mic")
+        self.phone_start.clicked.connect(self._pair_phone);phone_form.addWidget(self.phone_start)
+        stop = button("إيقاف الربط وإلغاء اقتران الهواتف", "stop", primary=False)
+        stop.clicked.connect(self._stop_phone);phone_form.addWidget(stop)
+        col.addWidget(panel);col.addWidget(phone); col.addStretch(); return scroll
+
+    def _pair_phone(self):
+        if self._phone_busy: return
+        host=self.phone_network.currentData()
+        if not host:
+            self._set_status("لم تُكتشف شبكة خاصة. صِل الكمبيوتر والهاتف بنفس Wi-Fi ثم أعد فتح البرنامج.",False);return
+        if not self.phone_bridge and QMessageBox.question(self,"ربط الهاتف",
+            "السماح لهواتف تقرنها بالرمز بالاتصال على هذه الشبكة الخاصة؟ الاتصال مشفر ويمكن إيقافه هنا. لن تُعدل إعدادات Firewall.") != QMessageBox.Yes: return
+        self._phone_busy = True
+        self.phone_start.setEnabled(False)
+        def start():
+            if not self.phone_bridge:
+                self.engine_manager.start()
+                from .phone_bridge import PhoneBridge
+                self.phone_bridge=PhoneBridge(host).start()
+            return self.phone_bridge.qr()
+        def show(data):
+            self._phone_busy = False
+            self.phone_start.setEnabled(True)
+            self.phone_status.setText("الربط مفعّل — " + self.phone_bridge.endpoint)
+            dialog=QDialog(self);dialog.setWindowTitle("اقتران NEXVARY Android");layout=QVBoxLayout(dialog)
+            layout.addWidget(title("افتح إعدادات Android واضغط مسح QR لربط الكمبيوتر",point=13))
+            pixmap=QPixmap();pixmap.loadFromData(data)
+            picture=QLabel();picture.setPixmap(pixmap.scaled(340,340,Qt.KeepAspectRatio,Qt.SmoothTransformation));picture.setAlignment(Qt.AlignCenter);layout.addWidget(picture)
+            layout.addWidget(title("الرمز لمرة واحدة وصالح 3 دقائق. لا تشاركه. أغلق الربط من البرنامج عند الانتهاء.",muted=True,point=10))
+            close=button("إغلاق الرمز", "back", primary=False);close.clicked.connect(dialog.accept);layout.addWidget(close)
+            dialog.exec()
+        def failed(_):
+            self._phone_busy = False
+            self.phone_start.setEnabled(True)
+        self._task(start,show,on_error=failed)
+
+    def _stop_phone(self):
+        if self._phone_busy or not self.phone_bridge: return
+        self._phone_busy = True
+        bridge=self.phone_bridge
+        def stop():
+            bridge.stop();self.phone_bridge=None
+        def done(_):
+            self._phone_busy=False
+            self.phone_status.setText("تم إيقاف الربط وإلغاء اقتران جميع الهواتف")
+        def failed(_):
+            self._phone_busy=False
+            self._closing_after_engine=False
+        self._task(stop,done,on_error=failed)
 
     def _quality_changed(self, model):
         desktop_setup.save_preferences(model)
@@ -921,6 +980,8 @@ class VoiceWindow(QMainWindow):
             return
         self.video_poll.stop()
         self.metrics_timer.stop()
+        if self.phone_bridge:
+            self._closing_after_engine=True; self._stop_phone(); event.ignore(); return
         if self.engine_manager.process is not None:
             # Shutdown only our own loopback child. Never terminate external services.
             if self._engine_busy:

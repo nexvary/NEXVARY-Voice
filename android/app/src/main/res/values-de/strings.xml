@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_000" formatted="false">"Mikrofonberechtigung verweigert."</string>
+    <string name="ui_001" formatted="false">"Prüfen Sie zuerst die Verbindung in den Einstellungen."</string>
+    <string name="ui_002" formatted="false">"Keine SRT-Datei ausgewählt"</string>
+    <string name="ui_003" formatted="false">"Kein MP4-Video ausgewählt"</string>
+    <string name="ui_004" formatted="false">"Computerzertifikat wird geprüft und gekoppelt…"</string>
+    <string name="ui_005" formatted="false">"Sicher gekoppelt. Übersetzung, Sprache und Synchronisation nutzen Ihren Computer."</string>
+    <string name="ui_006" formatted="false">"Kopplung fehlgeschlagen. Neuen QR-Code anzeigen, dasselbe WLAN verwenden und die Firewall prüfen. Schutz aktiviert lassen."</string>
+    <string name="ui_007" formatted="false">"Geben Sie zuerst einen Satz ein oder nehmen Sie ihn auf."</string>
+    <string name="ui_008" formatted="false">"Wählen Sie zwei unterschiedliche Sprachen."</string>
+    <string name="ui_009" formatted="false">"Satz wird zur Übersetzung gesendet…"</string>
+    <string name="ui_010" formatted="false">"Übersetzung abgeschlossen. Sprache wird wiedergegeben, wenn eine passende Stimme verfügbar ist."</string>
+    <string name="ui_011" formatted="false">"Übersetzung fehlgeschlagen: "</string>
+    <string name="ui_012" formatted="false">"Unbekannter Fehler"</string>
+    <string name="ui_013" formatted="false">"Datei nicht lesbar"</string>
+    <string name="ui_014" formatted="false">"Wählen Sie eine gültige SRT-Datei bis 500 KB."</string>
+    <string name="ui_015" formatted="false">"SRT-Datei"</string>
+    <string name="ui_016" formatted="false">"Untertitel importiert. Sie können die Übersetzung starten."</string>
+    <string name="ui_017" formatted="false">"Datei kann nicht gelesen werden: "</string>
+    <string name="ui_018" formatted="false">"Datei kann nicht zum Schreiben geöffnet werden"</string>
+    <string name="ui_019" formatted="false">"Übersetzte SRT-Datei gespeichert."</string>
+    <string name="ui_020" formatted="false">"Datei kann nicht gespeichert werden: "</string>
+    <string name="ui_021" formatted="false">"Untertitel der Synchronisation als SRT gespeichert."</string>
+    <string name="ui_022" formatted="false">"Untertitel können nicht gespeichert werden. Verbindung und Auftrag prüfen."</string>
+    <string name="ui_023" formatted="false">"Video ausgewählt. Starten Sie die Synchronisation, um es an Ihren Server zu senden."</string>
+    <string name="ui_024" formatted="false">"Synchronisiertes Video wird heruntergeladen…"</string>
+    <string name="ui_025" formatted="false">"Synchronisiertes MP4 gespeichert."</string>
+    <string name="ui_026" formatted="false">"Video kann nicht gespeichert werden: "</string>
+    <string name="ui_027" formatted="false">"Fehler"</string>
+    <string name="ui_028" formatted="false">"Startseite"</string>
+    <string name="ui_029" formatted="false">"Gespräch"</string>
+    <string name="ui_030" formatted="false">"Studio"</string>
+    <string name="ui_031" formatted="false">"Einstellungen"</string>
+    <string name="ui_032" formatted="false">"Gesprächsübersetzer"</string>
+    <string name="ui_033" formatted="false">"Abwechselnd sprechen • Sprechen oder tippen • Übersetzung hören"</string>
+    <string name="ui_034" formatted="false">"Originalsatz"</string>
+    <string name="ui_035" formatted="false">"Worte des Sprechers"</string>
+    <string name="ui_036" formatted="false">"Ins Mikrofon sprechen"</string>
+    <string name="ui_037" formatted="false">"Übersetzen und sprechen"</string>
+    <string name="ui_038" formatted="false">"Sprachübersetzung in Abschnitten • ASR und TTS auf dem Computer erforderlich"</string>
+    <string name="ui_039" formatted="false">"Übersetztes Zuhören"</string>
+    <string name="ui_040" formatted="false">"Audio wird in 3,2-Sekunden-Abschnitten verarbeitet, zusätzlich zur Übersetzungs- und Sprachverzögerung. Mikrofon danach stoppen."</string>
+    <string name="ui_041" formatted="false">"Sprachaufnahme stoppen"</string>
+    <string name="ui_042" formatted="false">"Mikrofonübersetzung starten"</string>
+    <string name="ui_043" formatted="false">"Sprecher sagte: "</string>
+    <string name="ui_044" formatted="false">"Sprach- und Videowerkzeuge"</string>
+    <string name="ui_045" formatted="false">"Sprachvorschau • Keine Live-Übertragung"</string>
+    <string name="ui_046" formatted="false">"Kommentarvorschau"</string>
+    <string name="ui_047" formatted="false">"Sprechen Sie in der gewählten Sprache und hören Sie die Übersetzung. Weiterleitung an OBS oder Streaming-Apps ist nicht verfügbar."</string>
+    <string name="ui_048" formatted="false">"Ihr Kommentar"</string>
+    <string name="ui_049" formatted="false">"Satz aufnehmen"</string>
+    <string name="ui_050" formatted="false">"Übersetzten Kommentar anhören"</string>
+    <string name="ui_051" formatted="false">"Erneut anhören"</string>
+    <string name="ui_052" formatted="false">"MP4-Synchronisation auf Computer oder Server • Hintergrundaufträge"</string>
+    <string name="ui_053" formatted="false">"Video in eine andere Sprache synchronisieren"</string>
+    <string name="ui_054" formatted="false">"MP4 bis 80 MB auswählen. Der Computer erkennt Sprache und erzeugt übersetztes Audio. Whisper-, Argos- und Piper-Modelle müssen installiert sein."</string>
+    <string name="ui_055" formatted="false">"MP4-Video auswählen"</string>
+    <string name="ui_056" formatted="false">"Synchronisation starten"</string>
+    <string name="ui_057" formatted="false">"Video wird hochgeladen…"</string>
+    <string name="ui_058" formatted="false">"Videoverarbeitung gestartet…"</string>
+    <string name="ui_059" formatted="false">"Synchronisation abgeschlossen. Video speichern."</string>
+    <string name="ui_060" formatted="false">"Synchronisation sicher abgebrochen."</string>
+    <string name="ui_061" formatted="false">"Synchronisation fehlgeschlagen: "</string>
+    <string name="ui_062" formatted="false">"Status: "</string>
+    <string name="ui_063" formatted="false">"Synchronisationsfehler: "</string>
+    <string name="ui_064" formatted="false">"Synchronisiertes MP4 speichern"</string>
+    <string name="ui_065" formatted="false">"Untertitel der Synchronisation speichern (SRT)"</string>
+    <string name="ui_066" formatted="false">"Synchronisationsauftrag abbrechen"</string>
+    <string name="ui_067" formatted="false">"Abbruch angefordert. Aktueller Abschnitt wird noch beendet."</string>
+    <string name="ui_068" formatted="false">"Abbruch kann nicht angefordert werden. Verbindung prüfen."</string>
+    <string name="ui_069" formatted="false">"SRT mit unveränderten Zeitangaben übersetzen"</string>
+    <string name="ui_070" formatted="false">"Videountertitel übersetzen"</string>
+    <string name="ui_071" formatted="false">"SRT-Untertitel importieren, übersetzen und speichern. Für übersetztes Audio die MP4-Synchronisation oben verwenden."</string>
+    <string name="ui_072" formatted="false">"SRT-Datei auswählen"</string>
+    <string name="ui_073" formatted="false">"Untertitel übersetzen"</string>
+    <string name="ui_074" formatted="false">"SRT wird übersetzt…"</string>
+    <string name="ui_075" formatted="false">"Übersetzung abgeschlossen. Ergebnis als SRT speichern."</string>
+    <string name="ui_076" formatted="false">"Untertitelübersetzung fehlgeschlagen: "</string>
+    <string name="ui_077" formatted="false">"Übersetztes SRT speichern"</string>
+    <string name="ui_078" formatted="false">"Einstellungen und Verbindung"</string>
+    <string name="ui_079" formatted="false">"Sicherer Server • Verbindung und Audio"</string>
+    <string name="ui_080" formatted="false">"Computer koppeln • Keine Adresse oder Schlüssel eingeben"</string>
+    <string name="ui_081" formatted="false">"Android-Kopplung im KI-Einrichtungszentrum aktivieren und QR-Code scannen. Dasselbe WLAN verwenden. Verarbeitung erfolgt auf dem Computer."</string>
+    <string name="ui_082" formatted="false">"QR-Code zur Computerkopplung scannen"</string>
+    <string name="ui_083" formatted="false">"NEXVARY-Code auf dem Computer scannen"</string>
+    <string name="ui_084" formatted="false">"Computer gekoppelt. Schlüssel verschlüsselt gespeichert. Sitzung endet nach 8 Stunden oder beim Stoppen der Verbindung."</string>
+    <string name="ui_085" formatted="false">"Computer vergessen und Gespräch stoppen"</string>
+    <string name="ui_086" formatted="false">"Computer vergessen. Zur erneuten Verbindung neuen QR-Code scannen."</string>
+    <string name="ui_087" formatted="false">"Anderen Server manuell einrichten (optional)"</string>
+    <string name="ui_088" formatted="false">"API-Token • Wird nicht gespeichert"</string>
+    <string name="ui_089" formatted="false">"Serververbindung testen"</string>
+    <string name="ui_090" formatted="false">"Verbunden. Installierte Übersetzungsmodelle prüfen."</string>
+    <string name="ui_091" formatted="false">"Gateway antwortet, aber die Inferenz-Engine ist nicht verfügbar."</string>
+    <string name="ui_092" formatted="false">"Verbindung fehlgeschlagen: "</string>
+    <string name="ui_093" formatted="false">"Bei neuer Computeradresse oder gestoppter Verbindung neuen QR-Code scannen. Im privaten Netzwerk ist kein VPS nötig. Manuelle API-Schlüssel werden nicht gespeichert."</string>
+    <string name="ui_094" formatted="false">"Audio und Lautsprecher"</string>
+    <string name="ui_095" formatted="false">"Android-Sprachdienste verarbeiten kurze Aufnahmen. Live-Übersetzung nutzt den Computer. Ausgabe folgt der Android-Audioroute einschließlich gekoppelter Bluetooth-Headsets."</string>
+    <string name="ui_096" formatted="false">"Texte sind temporär. Sprache nutzt 3,2-Sekunden-Abschnitte plus Verarbeitung. Kopfhörer verringern Echo."</string>
+    <string name="ui_097" formatted="false">"Verbunden"</string>
+    <string name="ui_098" formatted="false">"Getrennt"</string>
+    <string name="ui_099" formatted="false">"Nicht geprüft"</string>
+    <string name="ui_100" formatted="false">"Sprachgrenzen überwinden"</string>
+    <string name="ui_101" formatted="false">"Gespräche übersetzen, Sprache anhören und Videountertitel in einem Studio erstellen."</string>
+    <string name="ui_102" formatted="false">"Gespräch starten"</string>
+    <string name="ui_103" formatted="false">"Gespräch in beide Richtungen"</string>
+    <string name="ui_104" formatted="false">"Sprachen wechseln • Mikrofon • Textübersetzung und Sprache"</string>
+    <string name="ui_105" formatted="false">"Sprach- und Videostudio"</string>
+    <string name="ui_106" formatted="false">"Sprache anhören, MP4 synchronisieren und SRT übersetzen"</string>
+    <string name="ui_107" formatted="false">"Computer koppeln"</string>
+    <string name="ui_108" formatted="false">"QR scannen und Verbindung prüfen"</string>
+    <string name="ui_109" formatted="false">"Verarbeitung und Datenschutz"</string>
+    <string name="ui_110" formatted="false">"Live-Sprache und MP4-Synchronisation nutzen den gekoppelten Computer. Die App installiert keine KI-Modelle auf dem Telefon und leitet Audio nicht an andere Apps weiter."</string>
+    <string name="ui_111" formatted="false">"Von"</string>
+    <string name="ui_112" formatted="false">"Sprachen tauschen"</string>
+    <string name="ui_113" formatted="false">"Nach"</string>
+    <string name="ui_114" formatted="false">"Sprachübersetzung"</string>
+    <string name="ui_115" formatted="false">"Die Übersetzung erscheint hier nach Abschluss."</string>
+    <string name="ui_116" formatted="false">"Erneut anhören"</string>
+    <string name="ui_117" formatted="false">"In der anderen Sprache antworten"</string>
+    <string name="ui_118" formatted="false">"Oberflächensprache"</string>
+    <string name="ui_119" formatted="false">"Die Oberflächensprache ändert nicht die Übersetzungssprachen."</string>
+    <string name="ui_120" formatted="false">"Gestoppt"</string>
+    <string name="ui_121" formatted="false">"Mikrofonberechtigung erforderlich."</string>
+    <string name="ui_122" formatted="false">"Außerhalb von Debug-Tests ist HTTPS erforderlich."</string>
+    <string name="ui_123" formatted="false">"Gerät unterstützt das benötigte PCM16-Audio nicht."</string>
+    <string name="ui_124" formatted="false">"Mikrofon kann nicht initialisiert werden."</string>
+    <string name="ui_125" formatted="false">"Audio kann nicht initialisiert werden: "</string>
+    <string name="ui_126" formatted="false">"Verbindung zum Sprachübersetzer…"</string>
+    <string name="ui_127" formatted="false">"Aufnahme läuft. Sprache wird in 3,2-Sekunden-Abschnitten verarbeitet."</string>
+    <string name="ui_128" formatted="false">"Übersetzung empfangen. Verarbeitungszeit: "</string>
+    <string name="ui_129" formatted="false">" Sekunden, zusätzlich zum Audioabschnitt."</string>
+    <string name="ui_130" formatted="false">"Übersetzungsfehler: "</string>
+    <string name="ui_131" formatted="false">"Unerwartete Serverantwort."</string>
+    <string name="ui_132" formatted="false">"Stream-Verbindung getrennt: "</string>
+    <string name="ui_133" formatted="false">"Verbindung nicht verfügbar"</string>
+    <string name="ui_134" formatted="false">"Audioaufnahme konnte nicht fortgesetzt werden."</string>
+    <string name="ui_135" formatted="false">"Aufnahme gestoppt."</string>
+    <string name="ui_136" formatted="false">"Sprachausgabe auf dem Gerät nicht verfügbar."</string>
+    <string name="ui_137" formatted="false">"Spracherkennung nicht verfügbar. Text eingeben."</string>
+    <string name="ui_138" formatted="false">"Jetzt sprechen…"</string>
+    <string name="ui_139" formatted="false">"Sprache wird in Text umgewandelt…"</string>
+    <string name="ui_140" formatted="false">"Spracherkennung fehlgeschlagen (Code "</string>
+    <string name="ui_141" formatted="false">"Keine klare Sprache erkannt."</string>
+    <string name="ui_142" formatted="false">"Sprache erkannt. Text vor der Übersetzung bearbeiten."</string>
+    <string name="ui_143" formatted="false">"Übersetzung bereit, aber Sprachausgabe nicht verfügbar."</string>
+    <string name="ui_144" formatted="false">"Stimme für "</string>
+    <string name="ui_145" formatted="false">" ist auf dem Gerät nicht installiert."</string>
+</resources>

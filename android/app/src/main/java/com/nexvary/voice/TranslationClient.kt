@@ -12,7 +12,7 @@ object TranslationClient {
         require(base.startsWith("https://") || base.startsWith("http://")) {
             "أدخل رابط خادم HTTP/HTTPS صالحًا"
         }
-        val connection = URL(base + path).openConnection() as HttpURLConnection
+        val connection = ComputerPairing.connection(base + path)
         try {
             connection.requestMethod = if (payload == null) "GET" else "POST"
             connection.connectTimeout = 8000
@@ -33,7 +33,7 @@ object TranslationClient {
     }
 
     fun health(endpoint: String, token: String): Boolean {
-        val health = request(endpoint, "/health", "", null)
+        val health = request(endpoint, "/health", token, null)
         if (health.optString("status") != "ok") return false
         if (health.optString("service") == "voice-gateway") {
             val capabilities = request(endpoint, "/v1/capabilities", token, null)

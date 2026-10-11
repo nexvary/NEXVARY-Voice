@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_000" formatted="false">"تم رفض إذن الميكروفون."</string>
+    <string name="ui_001" formatted="false">"ابدأ باختبار الخادم من الإعدادات."</string>
+    <string name="ui_002" formatted="false">"لم يتم اختيار ملف SRT"</string>
+    <string name="ui_003" formatted="false">"لم يتم اختيار فيديو MP4"</string>
+    <string name="ui_004" formatted="false">"جارٍ التحقق من شهادة الكمبيوتر والاقتران…"</string>
+    <string name="ui_005" formatted="false">"تم الاقتران الآمن. يمكنك استخدام الترجمة والصوت والدبلجة عبر الكمبيوتر."</string>
+    <string name="ui_006" formatted="false">"تعذر الاقتران. اعرض QR جديدًا، وتأكد من نفس Wi-Fi وعدم منع الاتصال بواسطة Firewall. لا تعطل الحماية."</string>
+    <string name="ui_007" formatted="false">"اكتب النص أو سجّله أولًا."</string>
+    <string name="ui_008" formatted="false">"اختر لغتين مختلفتين."</string>
+    <string name="ui_009" formatted="false">"جارٍ إرسال الجملة إلى محرك الترجمة…"</string>
+    <string name="ui_010" formatted="false">"اكتملت ترجمة الجملة. ستسمع الصوت إذا كانت حزمة النطق متاحة."</string>
+    <string name="ui_011" formatted="false">"تعذر إتمام الترجمة: "</string>
+    <string name="ui_012" formatted="false">"خطأ غير معروف"</string>
+    <string name="ui_013" formatted="false">"ملف غير قابل للقراءة"</string>
+    <string name="ui_014" formatted="false">"اختر ملف ترجمة SRT صحيحًا لا يتجاوز 500KB."</string>
+    <string name="ui_015" formatted="false">"ملف SRT"</string>
+    <string name="ui_016" formatted="false">"تم استيراد ملف الترجمة؛ يمكنك بدء الترجمة."</string>
+    <string name="ui_017" formatted="false">"تعذر قراءة الملف: "</string>
+    <string name="ui_018" formatted="false">"تعذر فتح الملف للكتابة"</string>
+    <string name="ui_019" formatted="false">"تم حفظ ملف SRT المترجم."</string>
+    <string name="ui_020" formatted="false">"تعذر حفظ الملف: "</string>
+    <string name="ui_021" formatted="false">"تم حفظ ملف SRT الزمني للدبلجة."</string>
+    <string name="ui_022" formatted="false">"تعذر حفظ ملف الترجمة؛ تحقق من الاتصال وجاهزية المهمة."</string>
+    <string name="ui_023" formatted="false">"تم اختيار الفيديو. اضغط بدء الدبلجة لإرساله إلى خادمك."</string>
+    <string name="ui_024" formatted="false">"تنزيل الفيديو المترجم..."</string>
+    <string name="ui_025" formatted="false">"تم حفظ ملف MP4 المترجم."</string>
+    <string name="ui_026" formatted="false">"فشل حفظ الفيديو: "</string>
+    <string name="ui_027" formatted="false">"خطأ"</string>
+    <string name="ui_028" formatted="false">"الرئيسية"</string>
+    <string name="ui_029" formatted="false">"المحادثة"</string>
+    <string name="ui_030" formatted="false">"الاستوديو"</string>
+    <string name="ui_031" formatted="false">"الإعدادات"</string>
+    <string name="ui_032" formatted="false">"مترجم المحادثات"</string>
+    <string name="ui_033" formatted="false">"تبادل أدوار طبيعي • تحدث أو اكتب • استمع للترجمة"</string>
+    <string name="ui_034" formatted="false">"العبارة الأصلية"</string>
+    <string name="ui_035" formatted="false">"كلام المتحدث"</string>
+    <string name="ui_036" formatted="false">"التحدث بالميكروفون"</string>
+    <string name="ui_037" formatted="false">"ترجم وانطق"</string>
+    <string name="ui_038" formatted="false">"ترجمة صوتية حقيقية متتابعة • تحتاج خادم ASR وTTS"</string>
+    <string name="ui_039" formatted="false">"الاستماع المترجم"</string>
+    <string name="ui_040" formatted="false">"يعالج الخادم الصوت كل 3.2 ثانية، مع تأخير إضافي للترجمة والنطق. أوقف الميكروفون عند انتهاء الحوار."</string>
+    <string name="ui_041" formatted="false">"إيقاف الاستماع الصوتي"</string>
+    <string name="ui_042" formatted="false">"بدء الترجمة من الميكروفون"</string>
+    <string name="ui_043" formatted="false">"قال المتحدث: "</string>
+    <string name="ui_044" formatted="false">"أدوات ترجمة الصوت والفيديو"</string>
+    <string name="ui_045" formatted="false">"معاينة ترجمة صوتية — ليست بثًا مباشرًا"</string>
+    <string name="ui_046" formatted="false">"تجربة التعليق الصوتي"</string>
+    <string name="ui_047" formatted="false">"تحدث بالعربية أو بأي لغة محددة، واستمع للصوت المترجم. توجيه الصوت إلى OBS أو تطبيقات البث ليس مفعّلًا بعد."</string>
+    <string name="ui_048" formatted="false">"تعليقك الصوتي"</string>
+    <string name="ui_049" formatted="false">"تسجيل جملة"</string>
+    <string name="ui_050" formatted="false">"معاينة التعليق المترجم"</string>
+    <string name="ui_051" formatted="false">"إعادة الاستماع"</string>
+    <string name="ui_052" formatted="false">"دبلجة MP4 على الكمبيوتر أو الخادم — مهام معالجة"</string>
+    <string name="ui_053" formatted="false">"دبلجة فيديو إلى لغة أخرى"</string>
+    <string name="ui_054" formatted="false">"استيراد MP4 بحجم لا يتجاوز 80 ميجابايت. يعالج الخادم الكلام وينشئ صوتًا مترجمًا جديدًا، ثم يمكنك تنزيل الفيديو. يلزم تثبيت نماذج Whisper وArgos وPiper على الخادم."</string>
+    <string name="ui_055" formatted="false">"اختيار فيديو MP4"</string>
+    <string name="ui_056" formatted="false">"بدء الدبلجة على الخادم"</string>
+    <string name="ui_057" formatted="false">"رفع الفيديو إلى الخادم..."</string>
+    <string name="ui_058" formatted="false">"بدأت معالجة الفيديو..."</string>
+    <string name="ui_059" formatted="false">"اكتملت الدبلجة؛ احفظ الفيديو."</string>
+    <string name="ui_060" formatted="false">"تم إلغاء الدبلجة بأمان."</string>
+    <string name="ui_061" formatted="false">"فشلت الدبلجة: "</string>
+    <string name="ui_062" formatted="false">"الحالة: "</string>
+    <string name="ui_063" formatted="false">"عطل في الدبلجة: "</string>
+    <string name="ui_064" formatted="false">"حفظ الفيديو المترجم MP4"</string>
+    <string name="ui_065" formatted="false">"حفظ SRT الزمني للدبلجة"</string>
+    <string name="ui_066" formatted="false">"إلغاء مهمة الدبلجة"</string>
+    <string name="ui_067" formatted="false">"تم طلب الإلغاء الآمن؛ ننتظر انتهاء المقطع الجاري."</string>
+    <string name="ui_068" formatted="false">"تعذر إرسال طلب الإلغاء؛ تحقق من الاتصال."</string>
+    <string name="ui_069" formatted="false">"ترجمة ملف SRT مع الحفاظ على التوقيت"</string>
+    <string name="ui_070" formatted="false">"ترجمة نصوص الفيديو"</string>
+    <string name="ui_071" formatted="false">"استيراد الترجمة الزمنية SRT، ترجمتها مع الحفاظ على التوقيت، ثم حفظها. لتوليد الصوت المترجم استخدم بطاقة دبلجة MP4 أعلاه."</string>
+    <string name="ui_072" formatted="false">"اختيار ملف SRT"</string>
+    <string name="ui_073" formatted="false">"ترجمة ملف التوقيت"</string>
+    <string name="ui_074" formatted="false">"تجري ترجمة ملف SRT…"</string>
+    <string name="ui_075" formatted="false">"نجحت الترجمة. احفظ ملف SRT الناتج."</string>
+    <string name="ui_076" formatted="false">"فشلت ترجمة الملف: "</string>
+    <string name="ui_077" formatted="false">"حفظ ملف SRT المترجم"</string>
+    <string name="ui_078" formatted="false">"الإعدادات والاتصال"</string>
+    <string name="ui_079" formatted="false">"الخادم الآمن • التحكم في الحساب والصوت"</string>
+    <string name="ui_080" formatted="false">"ربط الكمبيوتر — دون كتابة عنوان أو مفتاح"</string>
+    <string name="ui_081" formatted="false">"افتح مركز إعداد الذكاء الاصطناعي على الكمبيوتر، فعّل ربط Android، ثم امسح الرمز. يلزم نفس Wi-Fi. تتم المعالجة على الكمبيوتر."</string>
+    <string name="ui_082" formatted="false">"مسح QR لربط الكمبيوتر"</string>
+    <string name="ui_083" formatted="false">"امسح رمز NEXVARY الظاهر على الكمبيوتر"</string>
+    <string name="ui_084" formatted="false">"الكمبيوتر مقترن؛ مفتاح الاتصال محفوظ مشفرًا. تنتهي الجلسة بعد 8 ساعات أو عند إيقاف الربط."</string>
+    <string name="ui_085" formatted="false">"نسيان الكمبيوتر وإيقاف المحادثة"</string>
+    <string name="ui_086" formatted="false">"تم نسيان الكمبيوتر. أعد مسح QR للربط."</string>
+    <string name="ui_087" formatted="false">"إعداد خادم آخر يدويًا (اختياري)"</string>
+    <string name="ui_088" formatted="false">"API Token — لا يتم حفظه"</string>
+    <string name="ui_089" formatted="false">"اختبار اتصال الخادم"</string>
+    <string name="ui_090" formatted="false">"الخادم متصل؛ تحقق من تثبيت نماذج الترجمة."</string>
+    <string name="ui_091" formatted="false">"الخادم الخفيف يستجيب لكن عامل الترجمة غير متصل أو غير جاهز."</string>
+    <string name="ui_092" formatted="false">"فشل الاتصال: "</string>
+    <string name="ui_093" formatted="false">"إذا تغير عنوان الكمبيوتر أو أُغلق الربط، اعرض QR جديدًا. لا تحتاج إلى VPS للربط على الشبكة الخاصة. مفاتيح الخادم اليدوية لا تُحفظ."</string>
+    <string name="ui_094" formatted="false">"الصوت والسماعات"</string>
+    <string name="ui_095" formatted="false">"تستخدم الجمل المسجلة خدمات الكلام في Android. تستخدم الترجمة الصوتية المتتابعة محرك الكمبيوتر. يخرج الصوت عبر مسار Android بما فيه سماعات Bluetooth المقترنة."</string>
+    <string name="ui_096" formatted="false">"النصوص مؤقتة؛ الترجمة الصوتية تعمل بمقاطع 3.2 ثانية إضافة إلى زمن المعالجة. استخدم سماعة رأس لتقليل الصدى."</string>
+    <string name="ui_097" formatted="false">"● متصل"</string>
+    <string name="ui_098" formatted="false">"● غير متصل"</string>
+    <string name="ui_099" formatted="false">"◌ غير مختبر"</string>
+    <string name="ui_100" formatted="false">"تواصل بلا حواجز لغوية"</string>
+    <string name="ui_101" formatted="false">"ترجمة المحادثات ونطقها ودبلجة MP4 وترجمة SRT داخل استوديو واحد."</string>
+    <string name="ui_102" formatted="false">"ابدأ محادثة"</string>
+    <string name="ui_103" formatted="false">"محادثة ثنائية الاتجاه"</string>
+    <string name="ui_104" formatted="false">"تبديل اللغات، ميكروفون، ترجمة نصية ونطق صوتي"</string>
+    <string name="ui_105" formatted="false">"استوديو التعليق والفيديو"</string>
+    <string name="ui_106" formatted="false">"معاينة الصوت ودبلجة MP4 وترجمة SRT"</string>
+    <string name="ui_107" formatted="false">"ربط الكمبيوتر"</string>
+    <string name="ui_108" formatted="false">"ضبط عنوان الخادم وفحص الاتصال"</string>
+    <string name="ui_109" formatted="false">"المعالجة والخصوصية"</string>
+    <string name="ui_110" formatted="false">"تعمل الترجمة الصوتية ودبلجة MP4 على الكمبيوتر المقترن. لا يثبّت التطبيق نماذج الذكاء الاصطناعي داخل الهاتف ولا يوجه الصوت إلى تطبيقات أخرى."</string>
+    <string name="ui_111" formatted="false">"من"</string>
+    <string name="ui_112" formatted="false">"تبديل اللغتين"</string>
+    <string name="ui_113" formatted="false">"إلى"</string>
+    <string name="ui_114" formatted="false">"الترجمة الصوتية"</string>
+    <string name="ui_115" formatted="false">"ستظهر الترجمة هنا فور إتمام الطلب."</string>
+    <string name="ui_116" formatted="false">"استمع مجددًا"</string>
+    <string name="ui_117" formatted="false">"رد باللغة الأخرى"</string>
+    <string name="ui_118" formatted="false">"لغة الواجهة"</string>
+    <string name="ui_119" formatted="false">"تغيير اللغة لا يغيّر لغتي الترجمة."</string>
+    <string name="ui_120" formatted="false">"متوقف"</string>
+    <string name="ui_121" formatted="false">"يلزم إذن الميكروفون."</string>
+    <string name="ui_122" formatted="false">"يلزم خادم HTTPS، باستثناء التجارب على نسخة Debug."</string>
+    <string name="ui_123" formatted="false">"الجهاز لا يدعم صوت PCM16 المطلوب."</string>
+    <string name="ui_124" formatted="false">"تعذر تهيئة الميكروفون."</string>
+    <string name="ui_125" formatted="false">"تعذر تهيئة الصوت: "</string>
+    <string name="ui_126" formatted="false">"جارٍ الاتصال بالمترجم الصوتي…"</string>
+    <string name="ui_127" formatted="false">"المترجم يستمع؛ تُعالج الجمل في مقاطع كل 3.2 ثوانٍ."</string>
+    <string name="ui_128" formatted="false">"وصلت الترجمة. زمن المعالجة: "</string>
+    <string name="ui_129" formatted="false">" ثانية، إضافة إلى المقطع الصوتي."</string>
+    <string name="ui_130" formatted="false">"عطل في الترجمة: "</string>
+    <string name="ui_131" formatted="false">"رد غير مفهوم من الخادم."</string>
+    <string name="ui_132" formatted="false">"انقطع اتصال البث: "</string>
+    <string name="ui_133" formatted="false">"اتصال غير متاح"</string>
+    <string name="ui_134" formatted="false">"تعذر استمرار التقاط الصوت."</string>
+    <string name="ui_135" formatted="false">"تم إيقاف الاستماع."</string>
+    <string name="ui_136" formatted="false">"محرك النطق غير متاح على الجهاز."</string>
+    <string name="ui_137" formatted="false">"التعرف الصوتي غير متاح على الجهاز. أدخل النص يدويًا."</string>
+    <string name="ui_138" formatted="false">"تحدث الآن…"</string>
+    <string name="ui_139" formatted="false">"تحويل الكلام إلى نص…"</string>
+    <string name="ui_140" formatted="false">"تعذر التعرف على الصوت (رمز "</string>
+    <string name="ui_141" formatted="false">"لم يُلتقط كلام واضح."</string>
+    <string name="ui_142" formatted="false">"تم التقاط الكلام. يمكنك تعديل النص قبل الترجمة."</string>
+    <string name="ui_143" formatted="false">"الترجمة جاهزة، لكن نطق الجهاز غير متاح."</string>
+    <string name="ui_144" formatted="false">"صوت اللغة "</string>
+    <string name="ui_145" formatted="false">" غير مثبت على الجهاز."</string>
+</resources>
