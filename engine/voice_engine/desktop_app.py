@@ -412,10 +412,14 @@ class VoiceWindow(QMainWindow):
         self.endpoint = field("https://your-domain.example")
         self.endpoint.setLayoutDirection(Qt.LeftToRight)
         self.endpoint.setText(os.getenv("NEXVARY_VOICE_URL", "http://127.0.0.1:8000"))
+        self._endpoint_value = self.endpoint.text()
+        self.endpoint.textChanged.connect(lambda value: setattr(self, "_endpoint_value", value))
         form.addWidget(self.endpoint)
         form.addWidget(title("API Token", point=12))
         self.secret = field("Bearer token (session only)", secret=True)
         self.secret.setLayoutDirection(Qt.LeftToRight)
+        self._secret_value = ""
+        self.secret.textChanged.connect(lambda value: setattr(self, "_secret_value", value))
         # Do not persist secrets in registry, AppData or Qt settings.
         form.addWidget(self.secret)
         check = button("اختبار الاتصال", "cloud")
@@ -448,20 +452,19 @@ class VoiceWindow(QMainWindow):
         self.status_label.setStyleSheet("color:" + (COLORS["cyan"] if success else COLORS["muted"]))
 
     def _api(self):
-        return DesktopAPI(self.endpoint.text(), self.secret.text())
+        return DesktopAPI(self._endpoint_value, self._secret_value)
 
     def _task(self, func, success, *, on_error=None):
         worker = JobThread(func, self)
         self._tasks.append(worker)
 
         def completed(data):
-            try: success(data)
-            finally: cleanup()
+            success(data)
 
         def failed(reason):
             self._set_status(reason, False)
-            if on_error: on_error(reason)
-            cleanup()
+            if on_error:
+                on_error(reason)
 
         def cleanup():
             if worker in self._tasks:
@@ -470,6 +473,7 @@ class VoiceWindow(QMainWindow):
 
         worker.completed.connect(completed)
         worker.failed.connect(failed)
+        worker.finished.connect(cleanup)
         worker.start()
 
     def _check_connection(self):
