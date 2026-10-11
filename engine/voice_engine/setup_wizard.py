@@ -141,7 +141,7 @@ class SetupTask(QThread):
 
 
 class SetupDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, audit=True):
         super().__init__(parent)
         self.setWindowTitle("NEXVARY Voice — فحص الجهاز وتجهيز الذكاء الاصطناعي")
         self.setMinimumSize(700, 620)
@@ -165,7 +165,8 @@ class SetupDialog(QDialog):
         self._thread: SetupTask | None = None
         self._result: dict | None = None
         self._build_ui()
-        self._start("audit")
+        if audit:
+            self._start("audit")
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
@@ -205,7 +206,6 @@ class SetupDialog(QDialog):
         info.setColumnStretch(1, 1)
         layout.addWidget(box)
 
-        row = QHBoxLayout()
         self.buttons = {}
         for mode, text in [
             ("all", "تجهيز جميع المكونات تلقائيًا"),
@@ -220,7 +220,6 @@ class SetupDialog(QDialog):
                 btn.setObjectName("primary")
             btn.clicked.connect(lambda checked=False, m=mode: self._confirm_and_start(m))
             self.buttons[mode] = btn
-            row.addWidget(btn)
         # Multiple rows avoid clipped actions on small laptop screens.
         layout.addWidget(self.buttons["all"])
         second = QHBoxLayout()
@@ -272,6 +271,9 @@ class SetupDialog(QDialog):
             ("whisper", "whisper_cached"), ("voices", "voices_ready")
         ]:
             self.rows[key].setText(label(data[item]))
+        if data.get("system_python"):
+            self.rows["runtime"].setText(
+                self.rows["runtime"].text() + " | Python 3.11 موجود بالفعل على الجهاز")
         self.rows["ffmpeg"].setText(
             label(data["ffmpeg"] and data["ffprobe"]) + " (FFmpeg + FFprobe)")
         if not data["uv_bundled"]:

@@ -98,6 +98,30 @@ def ffmpeg_pair(base: Path | None = None) -> tuple[str | None, str | None]:
     return shutil.which("ffmpeg"), shutil.which("ffprobe")
 
 
+def existing_system_python() -> Path | None:
+    """Detect compatible Python 3.11 already on Windows without modifying it."""
+    candidates = []
+    if shutil.which("py"):
+        candidates.append(["py", "-3.11"])
+    if shutil.which("python"):
+        candidates.append(["python"])
+    for command in candidates:
+        try:
+            result = subprocess.run(
+                command + ["-c", "import sys; print(sys.version_info[:2] == (3, 11)); print(sys.executable)"],
+                capture_output=True, text=True, encoding="utf-8", timeout=8,
+                creationflags=NO_WINDOW
+            )
+            lines = result.stdout.strip().splitlines()
+            if result.returncode == 0 and len(lines) >= 2 and lines[0].strip() == "True":
+                exe = Path(lines[-1].strip())
+                if exe.is_file():
+                    return exe
+        except (OSError, subprocess.SubprocessError):
+            continue
+    return None
+
+
 def model_report(base: Path | None = None) -> dict | None:
     dest = base or home()
     python = python_path(dest)
@@ -142,6 +166,7 @@ def detect(base: Path | None = None) -> dict:
         "microphone": microphone, "speakers": speakers,
         "ffmpeg": bool(ffmpeg), "ffprobe": bool(ffprobe),
         "runtime": python_path(dest).is_file(),
+        "system_python": str(existing_system_python() or ""),
         "uv_bundled": uv_path().is_file(),
         "translation_ready": bool(model and model.get("translation_ready")),
         "voices_ready": bool(model and model.get("piper_ready")),
@@ -159,12 +184,13 @@ def pipeline(base: Path | None = None) -> list[list[str]]:
     if not (src / "pyproject.toml").is_file():
         raise RuntimeError("ملفات المحرك البرمجية غير موجودة في حزمة Windows.")
     env = python_path(dest)
-    # Separate per-user runtime; never install packages into system Python.
-    return [
-        [str(uv), "python", "install", "3.11"],
-        [str(uv), "venv", "--python", "3.11", str(env.parent.parent)],
-        [str(uv), "pip", "install", "--python", str(env), str(src) + "[offline,speech]"],
-    ]
+    # Reuse a compatible interpreter if installed, but NEVER install packages
+    # into the user's system Python. Always build a separate private venv.
+    existing = existing_system_python()
+    commands = [] if existing else [[str(uv), "python", "install", "3.11"]]
+    commands.append([str(uv), "venv", "--python", str(existing or "3.11"), str(env.parent.parent)])
+    commands.append([str(uv), "pip", "install", "--python", str(env), str(src) + "[offline,speech]"])
+    return commands
 
 
 def model_command(kind: str, base: Path | None = None) -> list[str]:

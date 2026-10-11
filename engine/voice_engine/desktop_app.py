@@ -741,6 +741,10 @@ def main(argv=None):
     app.setLayoutDirection(Qt.RightToLeft)
     window = VoiceWindow()
     if "--self-test" in argv:
+        wizard = SetupDialog(window, audit=False)
+        assert len(wizard.rows) == 8
+        assert "all" in wizard.buttons
+        wizard.close()
         assert window.stack.count() == 5
         assert len(window.nav) == 5
         assert window.audio_start.isEnabled()

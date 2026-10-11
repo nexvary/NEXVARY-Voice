@@ -30,6 +30,7 @@ def test_uv_pipeline_never_installs_to_global_python(monkeypatch, tmp_path):
     (tmp_path / "bin" / "uv.exe").write_bytes(b"mock")
     (tmp_path / "engine").mkdir()
     (tmp_path / "engine" / "pyproject.toml").write_text("[project]")
+    monkeypatch.setattr(setup, "existing_system_python", lambda: None)
     base = tmp_path / "local"
     actions = setup.pipeline(base)
     assert len(actions) == 3
@@ -84,3 +85,19 @@ def test_integrity_check(tmp_path):
 
 def test_all_six_voices_configured():
     assert set(setup_assets.VOICES) == {"ar", "en", "it", "ru", "es", "bn"}
+
+def test_existing_python_is_reused_without_global_install(monkeypatch, tmp_path):
+    monkeypatch.setattr(setup, "resources", lambda: tmp_path)
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "bin" / "uv.exe").write_bytes(b"mock")
+    (tmp_path / "engine").mkdir()
+    (tmp_path / "engine" / "pyproject.toml").write_text("[project]")
+    existing = tmp_path / "Python311" / "python.exe"
+    existing.parent.mkdir()
+    existing.write_bytes(b"fixture")
+    monkeypatch.setattr(setup, "existing_system_python", lambda: existing)
+    actions = setup.pipeline(tmp_path / "user")
+    assert len(actions) == 2
+    assert str(existing) in actions[0]
+    assert "pip" in actions[1]
+    assert "--python" in actions[1]
