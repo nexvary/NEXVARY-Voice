@@ -1,5 +1,5 @@
 #define MyAppName "NEXVARY Voice Studio"
-#define MyAppVersion "0.4.1"
+#define MyAppVersion "0.5.0"
 #define MyAppPublisher "NEXVARY"
 #define MyAppExeName "NEXVARY-Voice.exe"
 [Setup]

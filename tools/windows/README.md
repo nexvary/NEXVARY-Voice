@@ -1,38 +1,69 @@
-# NEXVARY Voice Studio — Windows graphical application
+# NEXVARY Voice Studio — Windows 0.5.0
 
-Version 0.4.1 is a full PySide6 graphical application packaged as an EXE and an Inno Setup installer for Windows 10/11 x64.
+## Automatic first-run assistant: no command line for users
 
-The interface offers five working pages: home, two-way text interpretation, microphone speech translation, MP4 dubbing uploads, and server configuration. The microphone mode sends PCM16 WebSocket chunks to an actual speech worker; it is NOT simultaneous zero-latency translation or virtual microphone injection. Dubbing uploads an MP4 to the existing video job API; models must be installed on the connected inference worker.
+When opening the Windows GUI the first time, a read-only compatibility
+audit runs automatically. It checks:
 
-## Download and install
+- CPU, logical cores, physical RAM and free SSD space
+- Microphone and output audio devices
+- Presence of FFmpeg **and** FFprobe
+- Managed private Python 3.11 inference runtime
+- Installed Argos translation models for 6 languages, cached Whisper base
+  and licensed Piper voice model+JSON files
 
-Open the latest successful GitHub Actions run:
-https://github.com/nexvary/NEXVARY-Voice/actions
+Use the large **تجهيز جميع المكونات تلقائيًا** button to download and
+install missing components after reading the confirmation. You can also
+selectively install/repair one component and re-run the device scan.
+Progress and errors are displayed **inside** the program, not in PowerShell.
 
-Download artifact NEXVARY-Voice-Windows-Setup, extract the ZIP, and run NEXVARY-Voice-Setup-v0.4.1.exe.
+### How it works
 
-The Windows Portable artifact contains the whole unpacked application directory. Do not move the EXE outside that directory because the bundled Qt DLLs in _internal are necessary.
+The installer bundles the [Astral uv](https://docs.astral.sh/uv/) executable
+and the NEXVARY inference engine source code. With explicit approval,
+the setup assistant installs its own Python 3.11 environment under
+`%LOCALAPPDATA%\NEXVARY\Voice`, then installs AI dependencies and downloads
+Argos, Whisper and Piper models using HTTPS. FFmpeg/FFprobe are downloaded
+separately and kept under the same app-owned folder.
 
-The build is unsigned, so Windows SmartScreen may display a warning. Inspect the source, CI checks and SHA-256 checksums. The installer creates a per-user installation without requiring Python, system services, firewall changes or audio drivers.
+It does not change global Python, drivers, user PATH, firewall, Nginx or your
+Ubuntu server. Audio and translation stay local when you start localhost
+inference, unless you select a remote server in Settings.
+A read-only scan never downloads or changes files.
 
-## Connect to a speech engine
+### Finishing setup
 
-In Settings use https://your-private-host or http://127.0.0.1:8000 for a local engine. The lightweight Ubuntu gateway alone cannot run AI inference: connect it to a separate worker first.
+Press **تشغيل محرك الترجمة محليًا** in the assistant, return to Settings,
+verify that the endpoint is `http://127.0.0.1:8000`, and press
+**اختبار الاتصال**. A successful health check means the service responds;
+test actual text, microphone audio and a short video to verify the models.
 
-The EXE intentionally does not bundle multi-gigabyte model weights. It does bundle its Windows graphical libraries and desktop microphone transport. No secrets are stored, no voice files are written into the installer, and no automatic model downloads occur.
+The program shows explicit errors for inaccessible downloads or unsupported
+dependencies. Setup can be stopped and resumed; previously verified model
+files are preserved. Whisper model files, Argos packages and voice models are
+*not* bundled in the Setup installer.
 
-## Optional local inference on Windows
+### Limitations
 
-From the repo checkout:
-- Run tools/windows/install.ps1 with PowerShell and Python 3.11 installed
-- Install your own Argos, Whisper, and Piper voice models after reviewing licenses
-- Run the engine in the engine directory with its virtual environment Python:
-  .venv/Scripts/python.exe -m uvicorn voice_engine.api:app --host 127.0.0.1 --port 8000
+- Windows 10/11 x64. Requires Internet and several gigabytes of free SSD
+  to prepare all six languages. 4GB+ RAM for initial trials, 8GB+ preferable.
+- Six Piper voice licenses and model cards should be reviewed for intended use.
+- Streaming is chunk-based (3.2 seconds plus inference), **not** simultaneous
+  zero-delay translation or OBS virtual microphone replacement.
+- Actual voice speed, Windows audio drivers and model reliability are not
+  guaranteed by CI unit tests alone.
+- EXE installer is unsigned; SmartScreen may warn.
 
-## Reproduce
+### Developer / QA
 
-Install Python 3.11, packages from engine[desktop,dev], PyInstaller, and Pillow. Generate the ICO using tools/windows/make_icon.py, then build PyInstaller --onedir --windowed and compile tools/windows/NEXVARY-Voice.iss with Inno Setup 6. GitHub Actions automates unit tests, Qt offscreen UI checks, EXE launch tests, installer packaging, and SHA-256.
+Open the successful Windows Desktop Release Build on
+https://github.com/nexvary/NEXVARY-Voice/actions and download
+`NEXVARY-Voice-Windows-Setup`, extract it and run
+`NEXVARY-Voice-Setup-v0.5.0.exe`.
+Portable ZIP must keep all `_internal` libraries.
 
-## Model setup for the requested six languages
+GitHub Actions tests the Python audit/config/download integrity logic,
+Windows Qt offscreen GUI initialization, frozen EXE startup, bundled uv binary,
+packaged inference source and Inno Setup installer.
 
-See [README-LANGUAGES.md](README-LANGUAGES.md) for the Windows installation commands and separate Piper voice download script. The GUI installer contains no AI model weights.
+No live model downloads are performed in GitHub CI.

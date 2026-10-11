@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
 
 from .desktop_api import DesktopAPI, ClientError, websocket_url
 from .desktop_audio import run_audio_session
+from .setup_wizard import SetupDialog
+from . import desktop_setup
 
 COLORS = {
     "background": "#08111f", "panel": "#101e32", "raised": "#172942",
@@ -195,7 +197,10 @@ class VoiceWindow(QMainWindow):
             self.nav.append(nav)
             side.addWidget(nav)
         side.addStretch()
-        side.addWidget(title("DESKTOP EDITION  •  v0.4.1", muted=True, point=10))
+        setup_button = button("فحص الجهاز وتجهيز الذكاء الاصطناعي", "settings", primary=False)
+        setup_button.clicked.connect(self.open_device_setup)
+        side.addWidget(setup_button)
+        side.addWidget(title("DESKTOP EDITION  •  v0.5.0", muted=True, point=10))
         side.addWidget(title("Windows 10 / 11", muted=True, point=10))
 
         main = QFrame()
@@ -251,6 +256,9 @@ class VoiceWindow(QMainWindow):
         go = button("ابدأ محادثة", "languages")
         go.clicked.connect(lambda: self._set_page(1))
         inner.addWidget(go)
+        inspect_button = button("فحص الجهاز وتجهيز النماذج", "settings", primary=False)
+        inspect_button.clicked.connect(self.open_device_setup)
+        inner.addWidget(inspect_button)
         col.addWidget(hero)
         for name, note, ico, target in [
             ("مترجم المحادثات", "ترجمة النص في الاتجاهين من خلال محركك الخاص.", "languages", 1),
@@ -422,6 +430,9 @@ class VoiceWindow(QMainWindow):
         self.secret.textChanged.connect(lambda value: setattr(self, "_secret_value", value))
         # Do not persist secrets in registry, AppData or Qt settings.
         form.addWidget(self.secret)
+        setup_btn = button("فحص الجهاز وتثبيت المكونات الناقصة", "settings", primary=False)
+        setup_btn.clicked.connect(self.open_device_setup)
+        form.addWidget(setup_btn)
         check = button("اختبار الاتصال", "cloud")
         check.clicked.connect(self._check_connection)
         form.addWidget(check)
@@ -441,6 +452,11 @@ class VoiceWindow(QMainWindow):
         col.addWidget(panel2)
         col.addStretch()
         return scroll
+
+    def open_device_setup(self):
+        dialog = SetupDialog(self)
+        dialog.exec()
+        self._set_status("أُغلق معالج الإعداد. تحقق من الاتصال بمحركك المحلي.", False)
 
     def _set_page(self, index):
         self.stack.setCurrentIndex(index)
@@ -729,6 +745,10 @@ def main(argv=None):
         assert len(window.nav) == 5
         assert window.audio_start.isEnabled()
         assert window.upload.isEnabled()
+        if getattr(sys, "frozen", False):
+            assert desktop_setup.uv_path().is_file(), "uv.exe missing from frozen package"
+            assert (desktop_setup.source_dir() / "pyproject.toml").is_file()
+            assert (desktop_setup.source_dir() / "voice_engine" / "setup_assets.py").is_file()
         # PyInstaller --windowed can have sys.stdout=None; printing then exits 1.
         if sys.stdout is not None:
             try:
@@ -737,6 +757,7 @@ def main(argv=None):
                 pass
         return 0
     window.show()
+    QTimer.singleShot(350, window.open_device_setup)
     return app.exec()
 
 
