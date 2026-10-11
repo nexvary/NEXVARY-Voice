@@ -1,9 +1,9 @@
 FROM python:3.11-slim
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 XDG_CACHE_HOME=/tmp/cache XDG_CONFIG_HOME=/tmp/config XDG_DATA_HOME=/tmp/data
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 XDG_CACHE_HOME=/models/cache XDG_CONFIG_HOME=/models/config XDG_DATA_HOME=/models/data HF_HOME=/models/huggingface
 WORKDIR /srv/nexvary-voice
 COPY engine/pyproject.toml ./pyproject.toml
 COPY engine/voice_engine ./voice_engine
-RUN python -m pip install --no-cache-dir -e ".[offline]" && \
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*\nRUN python -m pip install --no-cache-dir -e ".[offline,speech]" && \
     useradd --system --uid 10001 --create-home voice
 USER 10001:10001
 EXPOSE 8000

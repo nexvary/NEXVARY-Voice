@@ -4,12 +4,16 @@ services:
     build:
       context: ../..
       dockerfile: deploy/ubuntu/Dockerfile
-    image: nexvary-voice-engine:0.2.0
+    image: nexvary-voice-engine:0.3.0
     restart: unless-stopped
     ports:
       - "127.0.0.1:${NEXVARY_VOICE_PORT:-18781}:8000"
     environment:
-      ARGOS_PACKAGES_DIR: /models
+      ARGOS_PACKAGES_DIR: /models/argos
+      HF_HOME: /models/huggingface
+      XDG_CACHE_HOME: /models/cache
+      NEXVARY_WHISPER_MODEL: ${NEXVARY_WHISPER_MODEL:-small}
+      NEXVARY_PIPER_VOICES: ${NEXVARY_PIPER_VOICES:?Set explicit Piper voice JSON in .env}
       NEXVARY_API_TOKEN: ${NEXVARY_API_TOKEN:?Set a strong API token in .env}
     volumes:
       - voice-models:/models
