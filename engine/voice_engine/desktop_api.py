@@ -179,5 +179,7 @@ class DesktopAPI:
         response = self._request('GET','/v1/dub/jobs/'+job_id+'/subtitles')
         path = Path(target)
         if path.exists(): raise ClientError('اختر اسم ملف جديدًا؛ الملف موجود بالفعل.')
-        with path.open('x',encoding='utf-8') as output: output.write(response.content.decode('utf-8-sig'))
+        # Preserve server CRLF exactly; text-mode output on Windows would turn
+        # CRLF into CRCRLF and split SRT cue lines into invalid empty blocks.
+        with path.open('xb') as output: output.write(response.content)
         return path

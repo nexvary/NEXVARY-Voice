@@ -6,6 +6,15 @@ import pytest
 from voice_engine.desktop_api import DesktopAPI, ClientError, normalize_url, websocket_url
 
 
+def test_srt_download_preserves_windows_crlf_and_arabic(tmp_path):
+    data='1\r\n00:00:00,000 --> 00:00:02,000\r\nمرحبا\r\n'.encode('utf-8')
+    api=DesktopAPI('http://127.0.0.1:8000',transport=httpx.MockTransport(lambda request:httpx.Response(200,content=data)))
+    target=tmp_path/'ترجمة.srt'
+    api.download_subtitles('job-1',target)
+    assert target.read_bytes()==data
+    with pytest.raises(ClientError):api.download_subtitles('job-1',target)
+
+
 def test_secure_endpoints():
     assert normalize_url("https://voice.example.org/") == "https://voice.example.org"
     assert websocket_url("http://127.0.0.1:8000") == "ws://127.0.0.1:8000/v1/live/audio"

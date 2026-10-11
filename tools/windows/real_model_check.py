@@ -78,6 +78,11 @@ def check_managed_client():
         inspected = subprocess.run([str(ffprobe),'-v','error','-show_streams','-of','json',str(target)],capture_output=True,text=True,check=True,timeout=30)
         assert {'audio','video'}<={v['codec_type'] for v in json.loads(inspected.stdout)['streams']}
         assert target.with_suffix('.srt').read_text(encoding='utf-8').strip()
+        from voice_engine.subtitles import translate_srt
+        class Identity:
+            def translate(self,text,source,target):return text
+        # Parsing validates real downloaded cue structure, not just file size.
+        translate_srt(target.with_suffix('.srt').read_text(encoding='utf-8-sig'),'ar','en',Identity())
         log('PASS: GUI video submit, progress polling, MP4 and SRT download; verified both media streams')
         manager.restart();assert manager.health()
         return {'state':'ready','transport':'real HTTP and WebSocket through DesktopAPI','hardware_audio':False}
