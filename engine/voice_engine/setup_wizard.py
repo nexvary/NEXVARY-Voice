@@ -296,6 +296,7 @@ class SetupDialog(QDialog):
         self.progress.setRange(0, 0)
         self.scan.setEnabled(False)
         self.launch.setEnabled(False)
+        self.dismiss.setEnabled(False)
         self.stop.setEnabled(mode != "audit")
         for b in self.buttons.values():
             b.setEnabled(False)
@@ -316,6 +317,7 @@ class SetupDialog(QDialog):
         self.progress.setValue(100 if self._result else 0)
         self.scan.setEnabled(True)
         self.launch.setEnabled(True)
+        self.dismiss.setEnabled(True)
         self.stop.setEnabled(False)
         for b in self.buttons.values():
             b.setEnabled(True)
@@ -355,6 +357,13 @@ class SetupDialog(QDialog):
         if self._thread:
             self._thread.cancel()
             self._log("طلب إيقاف العملية …")
+
+    def accept(self):
+        if self._thread and self._thread.isRunning():
+            QMessageBox.information(self, "عملية نشطة",
+                                    "لضمان سلامة التثبيت، أوقف العملية أولًا أو انتظر اكتمالها.")
+            return
+        super().accept()
 
     def reject(self):
         if self._thread and self._thread.isRunning():
