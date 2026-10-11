@@ -32,8 +32,15 @@ object TranslationClient {
         } finally { connection.disconnect() }
     }
 
-    fun health(endpoint: String): Boolean =
-        request(endpoint, "/health", "", null).optString("status") == "ok"
+    fun health(endpoint: String, token: String): Boolean {
+        val health = request(endpoint, "/health", "", null)
+        if (health.optString("status") != "ok") return false
+        if (health.optString("service") == "voice-gateway") {
+            val capabilities = request(endpoint, "/v1/capabilities", token, null)
+            return capabilities.optBoolean("worker_configured", false)
+        }
+        return true
+    }
 
     fun translate(endpoint: String, token: String, text: String, direction: Direction): VoiceResult {
         require(direction.isValid()) { "اختر لغتين مختلفتين." }

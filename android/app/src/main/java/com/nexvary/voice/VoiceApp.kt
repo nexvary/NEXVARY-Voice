@@ -421,9 +421,9 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                             busy = true
                                             try {
                                                 connected = withContext(Dispatchers.IO) {
-                                                    TranslationClient.health(endpoint)
+                                                    TranslationClient.health(endpoint, token)
                                                 }
-                                                status = if (connected == true) "الخادم متاح ويستجيب." else "الخادم لا يستجيب كما ينبغي."
+                                                status = if (connected == true) "الخادم متصل؛ تحقق من تثبيت نماذج الترجمة." else "الخادم الخفيف يستجيب لكن عامل الترجمة غير متصل أو غير جاهز."
                                             } catch (e: Exception) {
                                                 connected = false
                                                 status = "فشل الاتصال: " + (e.message ?: "خطأ غير معروف")
