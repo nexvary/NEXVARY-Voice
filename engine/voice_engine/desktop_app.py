@@ -1078,7 +1078,7 @@ def main(argv=None):
     if "--screenshots" in argv:
         directory = Path(argv[argv.index('--screenshots')+1]); directory.mkdir(parents=True,exist_ok=True)
         window.show()
-        for index,name in [(0,'dashboard'),(4,'languages'),(6,'setup'),(3,'video')]:
+        for index,name in [(0,'dashboard'),(2,'audio'),(4,'languages'),(6,'setup'),(3,'video')]:
             window._set_page(index); app.processEvents()
             window.grab().save(str(directory/(name+'.png')))
         wizard = SetupDialog(window,audit=False); wizard.show(); app.processEvents()
@@ -1106,6 +1106,7 @@ def main(argv=None):
         assert window.stack.count() == 9
         assert len(window.nav) == 9
         assert window.audio_start.isEnabled()
+        assert window.audio_test.isEnabled()
         assert window.upload.isEnabled()
         if getattr(sys, "frozen", False):
             assert desktop_setup.uv_path().is_file(), "uv.exe missing from frozen package"
