@@ -1,5 +1,8 @@
 # Delivery milestones
 
+- [x] Added isolated 1 GiB-host lightweight gateway with authenticated HTTP/WebSocket forwarding, bounded MP4 relay, Docker Compose and CI tests. It **does not** perform AI inference locally.
+- [ ] Connect a separate trusted speech-inference worker and benchmark the actual Arabic/Hindi conversion on real microphones.
+
 - [x] Foundation: public source repository, versioned Python API, explicit Argos model handling, unit/API tests, Android app scaffold, GitHub Actions.
 - [x] v0.2 premium Compose multi-screen Arabic RTL interface with conversation, studio, connectivity and genuine SRT export.
 - [x] Isolated Ubuntu Docker Compose manifests with loopback port binding and preflight; actual server deployment is not performed.

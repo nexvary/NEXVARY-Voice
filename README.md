@@ -45,6 +45,12 @@ curl -X POST http://127.0.0.1:8000/v1/translate -H "Content-Type: application/js
 
 An unavailable pair responds with HTTP 503 and `model_unavailable` rather than fabricated text. When `NEXVARY_API_TOKEN` is set, add `Authorization: Bearer <token>` to API requests; enable HTTPS and authentication **before any network exposure**. Never expose a development HTTP server publicly.
 
+## Lightweight control-plane gateway for resource-constrained Ubuntu
+
+For existing Ubuntu systems with about 1 GiB RAM, **do not run the full speech-model container**. A separate, non-inference gateway is now available with its own Dockerfile and Compose project, at a localhost-only port (default 18782). It forwards requests to a separate authenticated HTTPS inference worker **only after you configure that worker**; otherwise translation correctly returns HTTP 503. No model files are downloaded and existing FG MTM/Outline/Nginx services are not modified.
+
+See [lightweight gateway deployment](docs/GATEWAY_DEPLOYMENT.md). No deployment on the user's Ubuntu host has been performed.
+
 ## Ubuntu Docker deployment
 
 Read [deploy/ubuntu/README.md](deploy/ubuntu/README.md). **No remote server installation has been performed**. Run the read-only preflight before deploying into any existing Ubuntu production machine.
