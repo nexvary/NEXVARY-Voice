@@ -596,7 +596,10 @@ class VoiceWindow(QMainWindow):
                 translation_ok=len(directions)==10 and all(v.get('state')=='ready' for v in directions) and translations.get('current_assets_unchanged')
                 voice_result=functional.get('voices',{})
                 voice_ok=voice_result.get('current_assets_unchanged') and voice_result.get('data',{}).get(code,{}).get('state')=='ready'
-                label.setText(('الترجمة: اجتازت الاختبار' if translation_ok else 'الترجمة: نموذج موجود ويحتاج اختبارًا' if state['to_english'] and state['from_english'] else 'الترجمة: مسار ناقص') + ' | ' + ('الصوت: اجتاز توليد WAV' if voice_ok else state.get('voice_reason','يحتاج فحصًا')))
+                asr_result=functional.get('whisper',{})
+                asr_ok=asr_result.get('current_assets_unchanged') and asr_result.get('data',{}).get('languages',{}).get(code,{}).get('state')=='ready'
+                label.setText(('الترجمة: اجتازت الاختبار' if translation_ok else 'الترجمة: نموذج موجود ويحتاج اختبارًا' if state['to_english'] and state['from_english'] else 'الترجمة: مسار ناقص') + ' | ' + ('الصوت: اجتاز توليد WAV' if voice_ok else state.get('voice_reason','يحتاج فحصًا'))+' | '+('التعرف: اجتاز الاختبار' if asr_ok else 'التعرف: يحتاج اختبارًا فعليًا'))
+                label.setWordWrap(True)
 
             else: label.setText('لم يُعثر على تقرير لهذه اللغة؛ لا تُعتبر جاهزة.')
 

@@ -43,14 +43,24 @@ def functional_report(root: Path) -> dict:
     if not isinstance(data,dict):return {}
     files=[]
     package_files=[]
+    try:
+        selected_model=json.loads((root/'preferences.json').read_text(encoding='utf-8')).get('whisper_model','base')
+    except (OSError,ValueError,AttributeError):selected_model='base'
+    whisper_files=[]
+    snapshots=root/'huggingface'/'hub'/('models--Systran--faster-whisper-'+selected_model)/'snapshots'
+    if snapshots.is_dir():
+        for folder in list(snapshots.iterdir())[:20]:
+            whisper_files.extend([folder/'model.bin',folder/'config.json',folder/'tokenizer.json'])
     for path in voice_map(root).values():files.extend([Path(path),Path(path+'.json')])
     if (root/'argos').is_dir():
         for folder in list((root/'argos').iterdir())[:200]:
             package_files.extend([folder/'metadata.json',folder/'sentencepiece.model',folder/'bpe.model',folder/'model'/'model.bin'])
     for stage,value in data.items():
-        current_files=package_files if stage=='translations' else files if stage=='voices' else files+package_files
+        current_files=package_files if stage=='translations' else files if stage=='voices' else whisper_files if stage=='whisper' else files+package_files+whisper_files
         latest=max((p.stat().st_mtime for p in current_files if p.is_file()),default=0)
         if isinstance(value,dict):
             value['current_assets_unchanged']=value.get('checked_at',0)>=latest
+            if stage=='whisper':
+                value['current_assets_unchanged']=value['current_assets_unchanged'] and value.get('data',{}).get('model')==selected_model
             value['kind']='previous functional check; rerun after model changes'
     return data

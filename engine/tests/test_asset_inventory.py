@@ -20,3 +20,10 @@ def test_modified_model_invalidates_historical_functional_success(tmp_path,monke
     (tmp_path/'voices.json').write_text(json.dumps({'en':str(model)}))
     (tmp_path/'functional-tests.json').write_text(json.dumps({'voices':{'passed':True,'checked_at':time.time()-10}}))
     assert not functional_report(tmp_path)['voices']['current_assets_unchanged']
+
+
+def test_changing_whisper_quality_invalidates_old_recognition_test(tmp_path):
+    (tmp_path/'functional-tests.json').write_text(json.dumps({'whisper':{'passed':True,'checked_at':time.time(),'data':{'model':'base'}}}))
+    assert functional_report(tmp_path)['whisper']['current_assets_unchanged']
+    (tmp_path/'preferences.json').write_text(json.dumps({'whisper_model':'small'}))
+    assert not functional_report(tmp_path)['whisper']['current_assets_unchanged']
