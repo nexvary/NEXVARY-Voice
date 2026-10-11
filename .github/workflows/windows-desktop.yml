@@ -90,6 +90,27 @@ jobs:
         run: |
           & "${{ steps.inno.outputs.compiler }}" tools\windows\NEXVARY-Voice.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed" }
+      - name: Install Setup and launch installed EXE in Arabic path
+        shell: pwsh
+        timeout-minutes: 5
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $setup = (Resolve-Path "dist/installers/NEXVARY-Voice-Setup-v0.5.2.exe").Path
+          $destination = Join-Path $env:RUNNER_TEMP "nexvary-installed-اختبار"
+          $installLog = Join-Path $env:GITHUB_WORKSPACE "build/setup-install.log"
+          $setupArguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=`"$destination`"", "/LOG=`"$installLog`"")
+          $installed = Start-Process -FilePath $setup -ArgumentList $setupArguments -Wait -PassThru
+          if ($installed.ExitCode -ne 0) { throw "Setup install exit $($installed.ExitCode)" }
+          $installedExe = Join-Path $destination "NEXVARY-Voice.exe"
+          if (-not (Test-Path $installedExe)) { throw "Installed EXE missing" }
+          $smoke = Start-Process -FilePath $installedExe -ArgumentList '--self-test' -Wait -PassThru
+          if ($smoke.ExitCode -ne 0) { throw "Installed GUI smoke exit $($smoke.ExitCode)" }
+          $uninstallLog = Join-Path $env:GITHUB_WORKSPACE "build/setup-uninstall.log"
+          $uninstaller = Join-Path $destination "unins000.exe"
+          $removed = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=`"$uninstallLog`"") -Wait -PassThru
+          if ($removed.ExitCode -ne 0) { throw "Uninstall exit $($removed.ExitCode)" }
+          Write-Host 'Actual Setup install, installed frozen GUI, and uninstall passed.'
       - name: Create portable ZIP
         shell: pwsh
         run: Compress-Archive -Path dist/NEXVARY-Voice -DestinationPath dist/NEXVARY-Voice-Portable-v0.5.2.zip
@@ -124,6 +145,8 @@ jobs:
           path: |
             build/test-results.xml
             build/screenshots/
+            build/setup-install.log
+            build/setup-uninstall.log
           if-no-files-found: warn
           retention-days: 21
 
