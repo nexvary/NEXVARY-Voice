@@ -6,7 +6,7 @@
         <intent><action android:name="android.speech.RecognitionService"/></intent>
         <intent><action android:name="android.intent.action.TTS_SERVICE"/></intent>
     </queries>
-    <application android:allowBackup="false" android:label="NEXVARY Voice"
+    <application android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:allowBackup="false" android:label="NEXVARY Voice"
         android:supportsRtl="true" android:usesCleartextTraffic="false"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity android:name=".MainActivity" android:exported="true">

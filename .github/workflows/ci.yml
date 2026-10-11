@@ -55,3 +55,11 @@ jobs:
           name: NEXVARY-Voice-Android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+  ubuntu-deploy-config:
+    name: Ubuntu Compose validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate isolated Compose configuration
+        run: docker compose --env-file deploy/ubuntu/.env.example -f deploy/ubuntu/compose.yml config --quiet

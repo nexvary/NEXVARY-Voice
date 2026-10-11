@@ -1,17 +1,17 @@
 # NEXVARY Voice
 
-**AI voice translation foundation: Android two-way conversations + text streaming + recorded-video subtitling.**
+**Professional Android voice-translation studio with an isolated Ubuntu translation service.**
 
-> Status: **early engineering foundation**, not a finished simultaneous interpreter. The Android prototype uses push-to-talk and system speech recognition/text-to-speech. Real translation requires separately installed Argos Translate language models. Video subtitle translation works when models are installed; automated speech replacement and live broadcast audio routing remain planned.
+> Status: **v0.2 functional prototype**, not a finished simultaneous interpreter. Android now has a premium four-tab Material3 Compose Arabic RTL interface, turn-taking speech translation, voice preview, server connectivity tests, and SRT import/translation/export. Real translation requires separately installed Argos Translate language models. Video subtitle translation works when models are installed; automated speech replacement and live broadcast audio routing remain planned.
 
 ## Modules
 
 | Module | Current implementation | Planned next |
 | --- | --- | --- |
-| Android interpreter | Arabic RTL interface, typed or speech-recognized turns, direction swap, HTTPS translation API, system TTS | QR two-phone pairing, speaker diarization, local engine |
+| Android interpreter | Premium Compose UI, typed or speech-recognized turns, direction swap, HTTPS translation API, system TTS | QR two-phone pairing, speaker diarization, local engine |
 | Python translation engine | FastAPI text translation, Argos installed-model backend, explicit errors, optional token, WebSocket text-turn prototype | Streaming speech decoding, VAD, translation chunking |
 | Live broadcast | Authenticated WebSocket **text** transport prototype | Audio capture, jitter buffer, multilingual TTS, OBS / virtual audio device integration |
-| Recorded video | SRT subtitle translation CLI and existing-voice-track mux helper | ASR timestamps, per-speaker TTS, time alignment, quality checks |
+| Recorded video | Android SRT import/translate/export, Python SRT subtitle translation CLI and existing-voice-track mux helper | ASR timestamps, per-speaker TTS, time alignment, quality checks |
 | Windows | Design documented | GUI, OBS/virtual-audio adapter |
 
 ## Quick start (engine)
@@ -45,6 +45,10 @@ curl -X POST http://127.0.0.1:8000/v1/translate -H "Content-Type: application/js
 
 An unavailable pair responds with HTTP 503 and `model_unavailable` rather than fabricated text. When `NEXVARY_API_TOKEN` is set, add `Authorization: Bearer <token>` to API requests; enable HTTPS and authentication **before any network exposure**. Never expose a development HTTP server publicly.
 
+## Ubuntu Docker deployment
+
+Read [deploy/ubuntu/README.md](deploy/ubuntu/README.md). **No remote server installation has been performed**. Run the read-only preflight before deploying into any existing Ubuntu production machine.
+
 ## Android
 
 Open `android/` in Android Studio with JDK 17 and Android SDK 35. Build with Gradle 8.9:
@@ -70,6 +74,10 @@ The last command **only** combines audio already produced elsewhere. It does not
 ## Architecture, security and product roadmap
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/ROADMAP.md](docs/ROADMAP.md), and [docs/SECURITY.md](docs/SECURITY.md).
+
+## Current scope
+
+Production-ready simultaneous speech streaming, automatic voice dubbing of arbitrary videos, and Windows virtual-microphone routing **are not yet implemented**. A successful APK build does not establish low-latency translation quality. The backend needs language packs and HTTPS when accessed across the internet.
 
 ## License
 

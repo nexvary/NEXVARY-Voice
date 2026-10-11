@@ -1,6 +1,8 @@
 # Delivery milestones
 
 - [x] Foundation: public source repository, versioned Python API, explicit Argos model handling, unit/API tests, Android app scaffold, GitHub Actions.
+- [x] v0.2 premium Compose multi-screen Arabic RTL interface with conversation, studio, connectivity and genuine SRT export.
+- [x] Isolated Ubuntu Docker Compose manifests with loopback port binding and preflight; actual server deployment is not performed.
 - [x] Push-to-talk Android text capture -> server translation -> system TTS with source/target swap.
 - [x] Text-turn WebSocket protocol for future live mode; clearly marked non-audio.
 - [x] SRT translation tool + existing translated-audio mux tool.
