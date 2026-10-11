@@ -17,6 +17,8 @@ root.mkdir(parents=True,exist_ok=True)
 # Same isolated runtime installer, but CI locates uv from the installed package.
 desktop_setup.home = lambda: root
 desktop_setup.uv_path = lambda: Path(uv.find_uv_bin())
+# Prove setup without any reusable system Python; uv installs its own runtime.
+desktop_setup.existing_system_python = lambda: None
 app = QCoreApplication([])
 output = Path('build');output.mkdir(exist_ok=True)
 log_path = output/'real-model-log.txt'

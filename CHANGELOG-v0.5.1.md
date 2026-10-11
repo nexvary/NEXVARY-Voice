@@ -8,6 +8,7 @@ Based on main ff0fca19bd0c5775c0d84fa931f197244b6be46d (0.5.0).
 - CPU INT8 tiny/base/small choice, bounded threads, shared ASR, heavy workload lock and local process ownership.
 - HTTPS voice downloads retain partial files, resume with validators and Range, verify upstream size+MD5; FFmpeg archive requires upstream SHA-256 before extraction and executable tests.
 - Partial voice mapping checkpoint; reuses valid voice files and existing private runtime; repair avoids rebuilding an existing venv.
+- Unicode-safe Argos tokenization/model loading and native CPU inference with a two-model cache; conservative sentence chunking avoids unavailable Bengali Stanza resources. Piper API handles Unicode native data paths and forbids implicit diacritizer downloads.
 - Functional validation: 30 translation directions, six Piper WAV samples, Whisper recognition benchmark, short real AI dubbed MP4/SRT. Installed file checks are explicitly separate from inference checks.
 - Engine start/stop/restart with identity check and readiness timeout. Owned-process metrics and redacted session logs.
 - Video phase/segment progress, cooperative cancellation, SRT download, saved video preview, and output audio/video stream validation.

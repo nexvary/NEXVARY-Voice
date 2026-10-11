@@ -81,8 +81,15 @@ class PiperTTS:
             raise AudioBackendUnavailable(
                 f"Offline Piper voice for '{language}' missing. Configure NEXVARY_PIPER_VOICES."
             )
-        run_checked(["piper", "--model", model, "--output_file", str(target)],
-                    input_text=text + "\n", timeout=120)
+        if os.getenv('NEXVARY_PIPER_API') == '1':
+            try:
+                from .piper_adapter import synthesize
+                synthesize(text,model,target)
+            except Exception as exc:
+                raise AudioBackendUnavailable(f"تعذر توليد صوت {language}: {type(exc).__name__}: {str(exc)[:450]}") from exc
+        else:
+            run_checked(["piper", "--model", model, "--output_file", str(target)],
+                        input_text=text + "\n", timeout=120)
         if not target.is_file() or target.stat().st_size < 44:
             raise AudioBackendUnavailable("Piper did not produce a WAV audio file")
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Protocol
+import os
 
 
 class TranslationUnavailable(RuntimeError):
@@ -16,6 +17,12 @@ class ArgosTranslator:
     def translate(self, text: str, source: str, target: str) -> str:
         if source == target:
             return text
+        if os.getenv('NEXVARY_NATIVE_ARGOS') == '1':
+            try:
+                from .native_translate import translate
+                return translate(text,source,target)
+            except Exception as exc:
+                raise TranslationUnavailable(f"تعذر تشغيل مسار {source} → {target}: {type(exc).__name__}: {str(exc)[:350]}") from exc
         try:
             import argostranslate.translate as argos
         except ImportError as exc:
