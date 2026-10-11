@@ -549,7 +549,20 @@ class VoiceWindow(QMainWindow):
         self.audit_button.setEnabled(False)
         def done(data):
             self.audit_button.setEnabled(True)
-            self.diagnostic_text.setPlainText(json.dumps(data,ensure_ascii=False,indent=2))
+            states = {'ready':'متوفر وجاهز','missing':'يحتاج تثبيتًا','incompatible':'إصدار غير متوافق',
+                      'repair':'يحتاج إصلاحًا','failed':'فشل الفحص','unsupported':'غير مدعوم','unverified':'يحتاج اختبارًا فعليًا'}
+            lines = [f"النظام: {data.get('os','غير معروف')}",f"المعالج: {data.get('cpu','غير معروف')}",
+                     f"الأنوية المنطقية: {data.get('cores','غير معروف')}",
+                     f"RAM: {data.get('ram_gb','غير معروفة')} GB — المتاح: {data.get('probes',{}).get('ram_available_gb','غير معروف')} GB",
+                     f"المساحة الحرة: {data.get('disk_free_gb','غير معروفة')} GB",
+                     f"أجهزة الصوت: {data.get('audio_reason','غير مفحوصة')}"]
+            for value in data.get('probes',{}).values():
+                if isinstance(value,dict) and 'state' in value:
+                    lines.append(value['name']+' — '+states.get(value['state'],value['state'])+'\n'+value['reason'])
+            for label,key in [('Runtime','runtime_details'),('FFmpeg','ffmpeg_status'),('FFprobe','ffprobe_status')]:
+                value = data.get(key,{})
+                lines.append(label+' — '+states.get(value.get('state'), 'لم يُفحص')+'\n'+value.get('reason',''))
+            self.diagnostic_text.setPlainText('\n\n'.join(lines))
             self._language_result(data)
             self._set_status("اكتمل فحص الجهاز؛ الاختبارات الوظيفية منفصلة عن وجود الملفات.",True)
         self._task(desktop_setup.detect,done,on_error=lambda _:self.audit_button.setEnabled(True))
@@ -660,6 +673,9 @@ class VoiceWindow(QMainWindow):
             if worker in self._tasks:
                 self._tasks.remove(worker)
             worker.deleteLater()
+            if getattr(self, '_closing_after_engine', False) and not self._tasks:
+                self._closing_after_engine = False
+                QTimer.singleShot(0,self.close)
 
         worker.completed.connect(completed)
         worker.failed.connect(failed)
@@ -899,7 +915,8 @@ class VoiceWindow(QMainWindow):
             if self._engine_busy:
                 event.ignore(); return
             self._engine_busy = True
-            self._task(self.engine_manager.stop, lambda _: (setattr(self, '_engine_busy', False), self.close()),
+            self._closing_after_engine = True
+            self._task(self.engine_manager.stop, lambda _: setattr(self, '_engine_busy', False),
                        on_error=lambda _: setattr(self, '_engine_busy',False))
             event.ignore(); return
         event.accept()

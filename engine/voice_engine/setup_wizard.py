@@ -45,7 +45,7 @@ class SetupTask(QThread):
     def cancel(self):
         self._stop.set()
         if self._process and self._process.poll() is None:
-            self._process.terminate()
+            setup.stop_owned_process(self._process)
 
     def execute(self, argv, label):
         if self._stop.is_set(): raise RuntimeError("تم إيقاف الإعداد.")
@@ -57,7 +57,7 @@ class SetupTask(QThread):
             text=True, encoding="utf-8", errors="replace", bufsize=1, creationflags=setup.NO_WINDOW)
         try:
             for line in self._process.stdout:
-                if self._stop.is_set(): self._process.terminate(); break
+                if self._stop.is_set(): setup.stop_owned_process(self._process); break
                 text = line.strip()
                 if text.startswith("PROGRESS:"):
                     try: self.progress.emit(json.loads(text[9:]))

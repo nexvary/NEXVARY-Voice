@@ -400,3 +400,19 @@ class EngineManager:
                     'ram_mb':round(proc.memory_info().rss/1024**2,1)}
         except Exception:
             return {'state':self.last_state,'cpu_percent':None,'ram_mb':None}
+
+
+def stop_owned_process(process):
+    """Stop only the installer Popen and its children, without touching services."""
+    if process is None or process.poll() is not None: return
+    try:
+        import psutil
+        parent = psutil.Process(process.pid)
+        children = parent.children(recursive=True)
+        for child in reversed(children):
+            try: child.terminate()
+            except psutil.Error: pass
+    except (ImportError, OSError): pass
+    except Exception: pass
+    try: process.terminate()
+    except OSError: pass

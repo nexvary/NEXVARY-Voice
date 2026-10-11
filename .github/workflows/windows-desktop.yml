@@ -128,6 +128,7 @@ jobs:
           retention-days: 21
 
   real-models:
+    if: ${{ !contains(github.event.head_commit.message, '[skip real-models]') }}
     name: Real CPU models — six languages and dubbed MP4
     runs-on: windows-latest
     timeout-minutes: 90
