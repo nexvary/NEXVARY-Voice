@@ -46,11 +46,8 @@ def model(path,revision):
     folder=Path(path)/'model'
     kwargs=dict(device='cpu',compute_type='int8', inter_threads=1,
                 intra_threads=max(1,min(4,(os.cpu_count() or 2)//2)))
-    # Pass file bytes on Windows when a native library cannot resolve UTF-8 paths.
-    if os.name=='nt' and not str(folder).isascii():
-        files={p.name:p.read_bytes() for p in folder.iterdir() if p.is_file()}
-        if sum(map(len,files.values()))>1024**3: raise RuntimeError('Translation model exceeds memory policy')
-        return ctranslate2.Translator(str(folder),files=files,**kwargs)
+    # CTranslate2 opens Unicode paths on supported Windows builds. SentencePiece
+    # alone needs serialized loading; keep native model IO on its standard path.
     return ctranslate2.Translator(str(folder),**kwargs)
 
 
@@ -72,7 +69,8 @@ def translate(text,source,target):
             translator=model(str(pkg.package_path),str(pkg.package_version))
             output=translator.translate_batch(tokenized,target_prefix=prefix,replace_unknowns=True,
                 max_batch_size=32,batch_type='tokens',beam_size=4,num_hypotheses=1,
-                length_penalty=.2,max_input_length=1024,max_decoding_length=1024)
+                length_penalty=.2,max_input_length=1024,
+                max_decoding_length=max(64,min(512,max(map(len,tokenized),default=0)*4+32)))
             rendered=[]
             for batch in output:
                 sentence=pkg.tokenizer.decode(batch.hypotheses[0])

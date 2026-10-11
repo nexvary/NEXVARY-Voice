@@ -2,6 +2,7 @@
 
 Not a claim of microphone/speaker hardware or translation semantic accuracy.
 """
+import argparse
 import json
 import os
 import shutil
@@ -28,13 +29,21 @@ def log(message):
     print(message,flush=True)
     with log_path.open('a',encoding='utf-8') as out: out.write(message+'\n')
 
-worker = SetupTask('all')
+parser=argparse.ArgumentParser()
+parser.add_argument('--stage',default='all',choices=['all','runtime','ffmpeg','translations','whisper','voices','whisper-test','video-test'])
+args=parser.parse_args()
+worker = SetupTask(args.stage)
 worker.message.connect(log);worker.problem.connect(log)
 worker.done.connect(results.append)
-worker.run()
+if args.stage.endswith('-test'):
+    try:
+        worker.verify(args.stage.split('-')[0]);results.append(True)
+    except Exception as exc:
+        log(str(exc));results.append(False)
+else: worker.run()
 state = desktop_setup.detect()
 functional = root/'functional-tests.json'
-report = {'setup_passed':bool(results and results[-1]),'diagnostics':state,
+report = {'stage':args.stage,'setup_passed':bool(results and results[-1]),'diagnostics':state,
           'kind':'real Windows CPU INT8 model inference; no hardware audio',
           'functional_tests':json.loads(functional.read_text(encoding='utf-8')) if functional.exists() else {}}
 (output/'real-model-results.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
