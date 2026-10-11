@@ -12,5 +12,7 @@ class DirectionTest {
     @Test fun languagesPresent() {
         assertTrue(Languages.choices.any { it.code == "ar" })
         assertTrue(Languages.choices.any { it.code == "hi" })
+        assertTrue(Languages.choices.any { it.code == "ru" })
+        assertTrue(Languages.choices.any { it.code == "bn" })
     }
 }

@@ -195,7 +195,7 @@ class VoiceWindow(QMainWindow):
             self.nav.append(nav)
             side.addWidget(nav)
         side.addStretch()
-        side.addWidget(title("DESKTOP EDITION  •  v0.4", muted=True, point=10))
+        side.addWidget(title("DESKTOP EDITION  •  v0.4.1", muted=True, point=10))
         side.addWidget(title("Windows 10 / 11", muted=True, point=10))
 
         main = QFrame()

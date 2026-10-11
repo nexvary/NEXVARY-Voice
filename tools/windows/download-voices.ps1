@@ -47,6 +47,6 @@ foreach ($voice in $voices) {
     Write-Host "Voice $language downloaded and configured" -ForegroundColor Green
 }
 $configuration = Join-Path $engine 'voices.json'
-$mapping | ConvertTo-Json | Set-Content -LiteralPath $configuration -Encoding UTF8
+[System.IO.File]::WriteAllText($configuration, ($mapping | ConvertTo-Json), [System.Text.UTF8Encoding]::new($false))
 Write-Host "Local voice map created: $configuration" -ForegroundColor Cyan
 Write-Host "Review the MODEL_CARD files for individual voices before using them." -ForegroundColor Yellow

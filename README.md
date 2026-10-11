@@ -88,3 +88,7 @@ Segmented speech translation and automatic dubbed MP4 generation are implemented
 ## License
 
 No license grant has been selected yet. Third-party models and software have their own licenses; verify their compatibility before distributing. Do not interpret the repository's public visibility as an open-source license grant.
+
+## Six-language Windows model setup (0.4.1)
+
+Arabic, English, Italian, Russian, Spanish and Bengali are now exposed throughout the backend, Android and Windows clients. See [tools/windows/README-LANGUAGES.md](tools/windows/README-LANGUAGES.md) for opt-in model downloads, voice licenses and localhost engine startup. Code support does not mean the AI model files are included or already installed on your computer.

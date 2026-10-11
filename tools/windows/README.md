@@ -1,6 +1,6 @@
 # NEXVARY Voice Studio — Windows graphical application
 
-Version 0.4.0 is a full PySide6 graphical application packaged as an EXE and an Inno Setup installer for Windows 10/11 x64.
+Version 0.4.1 is a full PySide6 graphical application packaged as an EXE and an Inno Setup installer for Windows 10/11 x64.
 
 The interface offers five working pages: home, two-way text interpretation, microphone speech translation, MP4 dubbing uploads, and server configuration. The microphone mode sends PCM16 WebSocket chunks to an actual speech worker; it is NOT simultaneous zero-latency translation or virtual microphone injection. Dubbing uploads an MP4 to the existing video job API; models must be installed on the connected inference worker.
 
@@ -9,7 +9,7 @@ The interface offers five working pages: home, two-way text interpretation, micr
 Open the latest successful GitHub Actions run:
 https://github.com/nexvary/NEXVARY-Voice/actions
 
-Download artifact NEXVARY-Voice-Windows-Setup, extract the ZIP, and run NEXVARY-Voice-Setup-v0.4.0.exe.
+Download artifact NEXVARY-Voice-Windows-Setup, extract the ZIP, and run NEXVARY-Voice-Setup-v0.4.1.exe.
 
 The Windows Portable artifact contains the whole unpacked application directory. Do not move the EXE outside that directory because the bundled Qt DLLs in _internal are necessary.
 
@@ -32,3 +32,7 @@ From the repo checkout:
 ## Reproduce
 
 Install Python 3.11, packages from engine[desktop,dev], PyInstaller, and Pillow. Generate the ICO using tools/windows/make_icon.py, then build PyInstaller --onedir --windowed and compile tools/windows/NEXVARY-Voice.iss with Inno Setup 6. GitHub Actions automates unit tests, Qt offscreen UI checks, EXE launch tests, installer packaging, and SHA-256.
+
+## Model setup for the requested six languages
+
+See [README-LANGUAGES.md](README-LANGUAGES.md) for the Windows installation commands and separate Piper voice download script. The GUI installer contains no AI model weights.
