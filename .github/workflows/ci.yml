@@ -64,7 +64,7 @@ jobs:
           working-directory: android
           script: |
             gradle :app:connectedDebugAndroidTest --stacktrace --no-daemon
-            adb pull /sdcard/Android/data/com.nexvary.voice/files/screenshots app/build/screenshots
+            adb pull /sdcard/Download/nexvary-screenshots app/build/screenshots
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -31,7 +31,11 @@ class InterfaceLanguagesTest {
             val directory=File(rule.activity.getExternalFilesDir(null),"screenshots").apply { mkdirs() }
             val bitmap=instrumentation.uiAutomation.takeScreenshot()
             requireNotNull(bitmap)
-            File(directory,"android-settings-$code.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
+            val file=File(directory,"android-settings-$code.png")
+            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
+            // Test-only shell identity exports proof before Gradle uninstalls the app.
+            val command="mkdir -p /sdcard/Download/nexvary-screenshots && cp ${file.absolutePath} /sdcard/Download/nexvary-screenshots/"
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(command)).use { it.readBytes() }
         }
     }
 }

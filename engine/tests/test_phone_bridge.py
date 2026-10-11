@@ -75,6 +75,9 @@ def test_real_tls_http_and_binary_websocket_proxy():
         with connect(bridge.endpoint.replace('https://','wss://')+'/v1/live/audio',ssl=context,
                      additional_headers=headers) as ws:
             ws.send(b'actual PCM transport');assert ws.recv(timeout=5)==b'actual PCM transport'
+            from websockets.exceptions import ConnectionClosed
+            bridge.state.revoke()
+            with pytest.raises(ConnectionClosed): ws.recv(timeout=5)
         bridge.state.revoke()
         assert httpx.get(bridge.endpoint+'/health',verify=context,headers=headers,trust_env=False).status_code==401
     finally:

@@ -151,7 +151,11 @@ def relay_app(state: PairingState, backend='http://127.0.0.1:8000'):
                     async for item in upstream:
                         if isinstance(item,bytes): await ws.send_bytes(item)
                         else: await ws.send_text(item)
-                tasks = [asyncio.create_task(send()),asyncio.create_task(receive())]
+                async def expiry():
+                    while state.authorized(ws.headers.get('authorization')):
+                        await asyncio.sleep(1)
+                    await ws.close(code=1008,reason='Pairing session expired or revoked')
+                tasks = [asyncio.create_task(send()),asyncio.create_task(receive()),asyncio.create_task(expiry())]
                 try: await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
                 finally:
                     for task in tasks: task.cancel()
