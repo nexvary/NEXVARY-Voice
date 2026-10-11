@@ -68,7 +68,7 @@ jobs:
       - name: Capture frozen application screenshots
         shell: pwsh
         env:
-          QT_QPA_PLATFORM: offscreen
+          QT_QPA_PLATFORM: windows
         run: |
           $exe = (Resolve-Path ".\dist\NEXVARY-Voice\NEXVARY-Voice.exe").Path
           $images = Join-Path $env:GITHUB_WORKSPACE "build/screenshots"

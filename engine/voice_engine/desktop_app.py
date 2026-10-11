@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QObject, QThread, QTimer, Signal, QByteArray, QSize, QUrl
-from PySide6.QtGui import QIcon, QPixmap, QPainter, QFont, QColor, QDesktopServices
+from PySide6.QtGui import QIcon, QPixmap, QPainter, QFont, QColor, QDesktopServices, QFontDatabase, QFontMetrics
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QFrame, QHBoxLayout, QVBoxLayout,
@@ -974,6 +974,14 @@ def main(argv=None):
         except Exception:
             pass
     app = QApplication([sys.argv[0]])
+    # The offscreen Windows Qt platform may not enumerate system fonts. Register
+    # Windows' installed UI fonts explicitly, also covering frozen GUI captures.
+    if sys.platform == 'win32':
+        font_dir = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Fonts'
+        for name in ('segoeui.ttf', 'segoeuib.ttf', 'seguisb.ttf', 'arial.ttf'):
+            path = font_dir / name
+            if path.is_file():
+                QFontDatabase.addApplicationFont(str(path))
     app.setFont(QFont("Segoe UI", 11))
     app.setLayoutDirection(Qt.RightToLeft)
     window = VoiceWindow()
@@ -988,6 +996,7 @@ def main(argv=None):
         wizard.close(); window.close()
         return 0
     if "--self-test" in argv:
+        assert QFontMetrics(app.font()).inFontUcs4(0x0627), 'Arabic font glyph missing'
         wizard = SetupDialog(window, audit=False)
         assert len(wizard.rows) == 8
         assert "all" in wizard.buttons

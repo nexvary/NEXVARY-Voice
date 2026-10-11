@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import tempfile
 import threading
@@ -129,7 +130,17 @@ def make_mix_command(clips: list[tuple[float, Path]], duration: float,
                    f"amix=inputs={len(names)}:duration=first:normalize=0,"
                    "alimiter=limit=0.95[mix]")
     script.write_text(";\n".join(filters), encoding="utf-8")
-    argv.extend(["-filter_complex_script", str(script), "-map", "[mix]",
+    # FFmpeg 7 introduced file-valued options; FFmpeg 9 removed the old
+    # filter_complex_script alias. Keep existing older FFmpeg installations.
+    try:
+        version = subprocess.run(['ffmpeg', '-version'], capture_output=True,
+                                 text=True, timeout=10,
+                                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        match = re.search(r'ffmpeg version (?:n)?(\d+)', version.stdout)
+        modern = bool(match and int(match.group(1)) >= 7)
+    except (OSError, subprocess.SubprocessError):
+        modern = False
+    argv.extend(["-/filter_complex" if modern else "-filter_complex_script", str(script), "-map", "[mix]",
                  "-c:a", "pcm_s16le", str(output)])
     return argv
 

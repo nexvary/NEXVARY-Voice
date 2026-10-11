@@ -5,9 +5,11 @@ Audio samples are real Piper speech; speaker audibility requires user listening.
 """
 from __future__ import annotations
 import argparse
+import array
 import json
 import os
 import time
+import sys
 import wave
 from pathlib import Path
 
@@ -24,7 +26,13 @@ SAMPLES = {
 def valid_wav(path: Path) -> bool:
     try:
         with wave.open(str(path), 'rb') as audio:
-            return audio.getnframes() > 0 and audio.getframerate() > 0 and audio.getsampwidth() == 2
+            if audio.getnframes() <= 0 or audio.getframerate() <= 0 or audio.getsampwidth() != 2:
+                return False
+            while frames := audio.readframes(8192):
+                values = array.array('h', frames)
+                if sys.byteorder != 'little': values.byteswap()
+                if any(abs(value) > 32 for value in values): return True
+            return False
     except (OSError, EOFError, wave.Error): return False
 
 
@@ -75,17 +83,26 @@ def check_whisper(root: Path, log=print) -> dict:
     model = os.getenv('NEXVARY_WHISPER_MODEL', 'base')
     start = time.monotonic()
     asr = WhisperASR(model, allow_download=False)
-    sample = root / 'samples' / 'en.wav'
-    if not valid_wav(sample):
-        return {'state': 'unverified', 'reason': 'Whisper loaded; run voice validation first to obtain speech input.'}
-    decoded = asr.transcribe(sample, 'en')
-    text = ' '.join(s.text for s in decoded).strip()
-    if not text: raise RuntimeError('Whisper did not recognize generated speech')
-    elapsed = time.monotonic()-start
-    with wave.open(str(sample)) as audio: duration = audio.getnframes()/audio.getframerate()
-    log(f'PASS: Whisper {model}; {elapsed:.2f}s; recognized speech')
-    return {'state': 'ready', 'model': model, 'elapsed_seconds': round(elapsed, 3),
-            'audio_seconds': round(duration, 3), 'real_time_factor_including_load': round(elapsed/duration, 3), 'text': text}
+    load_seconds = time.monotonic()-start
+    languages = {}
+    for code in SAMPLES:
+        sample = root / 'samples' / (code + '.wav')
+        try:
+            if not valid_wav(sample): raise RuntimeError('Run voice validation first to obtain non-silent speech input')
+            started = time.monotonic()
+            decoded = asr.transcribe(sample, code)
+            text = ' '.join(s.text for s in decoded).strip()
+            if not text: raise RuntimeError('Whisper did not recognize generated speech')
+            elapsed = time.monotonic()-started
+            with wave.open(str(sample)) as audio: duration = audio.getnframes()/audio.getframerate()
+            languages[code] = {'state':'ready', 'elapsed_seconds':round(elapsed,3),
+                               'audio_seconds':round(duration,3), 'real_time_factor':round(elapsed/duration,3), 'text':text}
+            log(f'PASS: Whisper {model}; {code}; {elapsed:.2f}s; recognized speech')
+        except Exception as exc:
+            languages[code] = {'state':'failed', 'reason':str(exc)[:1400]}
+            log(f'FAILED: Whisper {code}: {exc}')
+    return {'state':'ready' if all(v['state']=='ready' for v in languages.values()) else 'failed',
+            'model':model, 'load_seconds':round(load_seconds,3), 'languages':languages}
 
 
 def check_video(root: Path, log=print) -> dict:
