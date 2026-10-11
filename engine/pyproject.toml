@@ -18,7 +18,7 @@ offline = ["argostranslate>=1.9,<2.0"]
 dev = ["pytest>=8,<10", "httpx>=0.27,<1.0"]
 speech = ["faster-whisper>=1.1,<2.0", "piper-tts>=1.2,<2.0"]
 cloud = ["edge-tts>=7,<9"]
-desktop = ["sounddevice>=0.5,<1.0", "websockets>=14,<17"]
+desktop = ["sounddevice>=0.5,<1.0", "websockets>=14,<17", "PySide6>=6.8,<7.0", "httpx>=0.27,<1.0"]
 
 [tool.setuptools.packages.find]
 include = ["voice_engine*"]
