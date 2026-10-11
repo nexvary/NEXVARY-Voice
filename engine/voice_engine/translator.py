@@ -38,7 +38,7 @@ class ArgosTranslator:
             raise
         except Exception as exc:
             raise TranslationUnavailable(
-                f"Cannot translate {source} to {target} using installed models."
+                f"Cannot translate {source} to {target} using installed models. {type(exc).__name__}: {str(exc)[:350]}"
             ) from exc
         if not result or not result.strip():
             raise TranslationUnavailable("The translation engine returned an empty result.")

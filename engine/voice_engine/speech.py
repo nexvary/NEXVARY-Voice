@@ -52,12 +52,13 @@ def run_checked(argv: list[str], *, input_text: str | None = None,
     """Execute binary with argument list, no shell, and bounded time."""
     try:
         subprocess.run(argv, check=True, input=input_text, text=True,
-                       capture_output=True, timeout=timeout,
+                       capture_output=True, encoding="utf-8", errors="replace", timeout=timeout,
                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     except FileNotFoundError as exc:
         raise AudioBackendUnavailable(f"Executable not installed: {argv[0]}") from exc
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        raise AudioBackendUnavailable(f"Audio processing failed: {argv[0]}") from exc
+        detail = str(getattr(exc, "stderr", "") or "")[-1200:]
+        raise AudioBackendUnavailable(f"Audio processing failed: {argv[0]}: {detail}") from exc
 
 
 class PiperTTS:

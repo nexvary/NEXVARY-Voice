@@ -41,8 +41,8 @@ def check_translations(log=print) -> dict:
                 results[source + '->' + target] = {'state': 'ready', 'elapsed_seconds': round(time.monotonic()-start, 3), 'result': value}
                 log('PASS: ' + source + ' → ' + target)
             except Exception as exc:
-                results[source + '->' + target] = {'state': 'failed', 'reason': str(exc)[:250]}
-                log('FAILED: ' + source + ' → ' + target + ': ' + type(exc).__name__)
+                results[source + '->' + target] = {'state': 'failed', 'reason': str(exc)[:1400]}
+                log('FAILED: ' + source + ' → ' + target + ': ' + str(exc)[:1000])
     return results
 
 
@@ -64,8 +64,8 @@ def check_voices(root: Path, log=print) -> dict:
             results[code] = {'state': 'ready', 'sample': str(output), 'elapsed_seconds': round(time.monotonic()-start, 3)}
             log('PASS: Piper ' + code + ' → WAV')
         except Exception as exc:
-            results[code] = {'state': 'failed', 'reason': str(exc)[:250]}
-            log('FAILED: Piper ' + code + ': ' + type(exc).__name__)
+            results[code] = {'state': 'failed', 'reason': str(exc)[:1400]}
+            log('FAILED: Piper ' + code + ': ' + str(exc)[:1400])
         finally: stage.unlink(missing_ok=True)
     return results
 
