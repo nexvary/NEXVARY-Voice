@@ -144,7 +144,7 @@ class DesktopAPI:
             raise ClientError("هناك تنزيل غير مكتمل بنفس الاسم؛ احذفه بعد التحقق.")
         headers = {"Authorization": "Bearer " + self.token} if self.token else {}
         try:
-            with httpx.Client(timeout=httpx.Timeout(180, connect=8),
+            with httpx.Client(transport=self._transport, timeout=httpx.Timeout(180, connect=8),
                               follow_redirects=False, trust_env=False) as client:
                 with client.stream("GET", self.base + "/v1/dub/jobs/" + job_id + "/video",
                                    headers=headers) as response:

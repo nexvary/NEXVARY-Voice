@@ -60,6 +60,7 @@ jobs:
             --hidden-import uvicorn.lifespan.on `
             tools/windows/app_entry.py
       - name: Test built EXE
+        timeout-minutes: 5
         shell: pwsh
         env:
           QT_QPA_PLATFORM: offscreen
@@ -148,6 +149,7 @@ jobs:
           name: NEXVARY-Voice-Windows-Evidence
           path: |
             build/test-results.xml
+            build/frozen-smoke-error.txt
             build/screenshots/
             build/setup-install.log
             build/setup-uninstall.log

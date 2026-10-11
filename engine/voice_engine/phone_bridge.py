@@ -188,7 +188,7 @@ class PhoneBridge:
         sock=socket.socket();sock.bind((self.host,0));sock.listen(16)
         self.endpoint=f'https://{self.host}:{sock.getsockname()[1]}'
         config=uvicorn.Config(relay_app(self.state,self.backend),host=self.host,ssl_certfile=str(root/'cert.pem'),
-            ssl_keyfile=str(root/'key.pem'),access_log=False,log_level='error',limit_concurrency=16,timeout_keep_alive=5,timeout_graceful_shutdown=3,ws_max_size=2*1024*1024)
+            ssl_keyfile=str(root/'key.pem'),log_config=None,access_log=False,log_level='error',limit_concurrency=16,timeout_keep_alive=5,timeout_graceful_shutdown=3,ws_max_size=2*1024*1024)
         self.server=uvicorn.Server(config)
         self.thread=threading.Thread(target=self.server.run,kwargs={'sockets':[sock]},daemon=True);self.thread.start()
         deadline=time.monotonic()+8
