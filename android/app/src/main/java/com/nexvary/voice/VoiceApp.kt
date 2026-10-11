@@ -1,6 +1,9 @@
 package com.nexvary.voice
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import android.content.pm.ApplicationInfo
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,6 +62,14 @@ private val voiceTheme = darkColorScheme(
 fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("voice_config", Context.MODE_PRIVATE) }
+    val live = remember { LiveStreamController(context.applicationContext) }
+    var requestLive by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val livePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) requestLive?.invoke()
+        else live.stateMessage("تم رفض إذن الميكروفون.")
+        requestLive = null
+    }
+    DisposableEffect(live) { onDispose { live.release() } }
     val debug = remember { (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0 }
     var page by rememberSaveable { mutableIntStateOf(0) }
     var endpoint by rememberSaveable {
@@ -195,6 +206,38 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                     }
                                     ActionButton("ترجم وانطق", Icons.Rounded.Translate, true, busy) {
                                         doTranslate(conversationInput, false)
+                                    }
+                                }
+                                GlassCard {
+                                    StatusTag("ترجمة صوتية حقيقية متتابعة • تحتاج خادم ASR وTTS", Aqua)
+                                    Text("الاستماع المترجم", fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold, color = Silver)
+                                    Text("يعالج الخادم الصوت كل 3.2 ثانية، مع تأخير إضافي للترجمة والنطق. أوقف الميكروفون عند انتهاء الحوار.",
+                                        color = Muted, fontSize = 12.sp)
+                                    ActionButton(
+                                        if (live.active) "إيقاف الاستماع الصوتي" else "بدء الترجمة من الميكروفون",
+                                        if (live.active) Icons.Rounded.Stop else Icons.Rounded.RecordVoiceOver,
+                                        true, false
+                                    ) {
+                                        if (live.active) live.stop()
+                                        else {
+                                            val startStream = {
+                                                audio.stop()
+                                                live.start(endpoint, token, from, to)
+                                            }
+                                            if (ContextCompat.checkSelfPermission(
+                                                context, Manifest.permission.RECORD_AUDIO
+                                            ) == PackageManager.PERMISSION_GRANTED) startStream()
+                                            else {
+                                                requestLive = startStream
+                                                livePermission.launch(Manifest.permission.RECORD_AUDIO)
+                                            }
+                                        }
+                                    }
+                                    Text(live.state, color = Aqua, fontSize = 12.sp)
+                                    if (live.translated.isNotBlank()) {
+                                        Text("قال المتحدث: " + live.original, fontSize = 12.sp, color = Muted)
+                                        Text(live.translated, fontSize = 20.sp, color = Silver)
                                     }
                                 }
                                 ResultCard(conversationResult, audio) {
