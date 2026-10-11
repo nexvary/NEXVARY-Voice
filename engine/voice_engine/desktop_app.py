@@ -729,7 +729,12 @@ def main(argv=None):
         assert len(window.nav) == 5
         assert window.audio_start.isEnabled()
         assert window.upload.isEnabled()
-        print("NEXVARY Voice Desktop UI smoke test: PASS")
+        # PyInstaller --windowed can have sys.stdout=None; printing then exits 1.
+        if sys.stdout is not None:
+            try:
+                print("NEXVARY Voice Desktop UI smoke test: PASS")
+            except (OSError, ValueError):
+                pass
         return 0
     window.show()
     return app.exec()
