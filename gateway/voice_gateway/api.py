@@ -10,7 +10,6 @@ import hmac
 import json
 import os
 import re
-import tempfile
 from urllib.parse import urlsplit
 
 import httpx
@@ -144,31 +143,31 @@ async def upload_video(file: UploadFile = File(...), source_language: str = Form
     if source_language == target_language:
         raise HTTPException(422, detail="Choose distinct languages")
     try:
-        with tempfile.TemporaryFile(mode="w+b") as temporary:
-            total = 0
-            while True:
-                buf = await file.read(65536)
-                if not buf:
-                    break
-                total += len(buf)
-                if total > MAX_UPLOAD:
-                    raise HTTPException(413, detail="Video exceeds 80 MiB")
-                temporary.write(buf)
-            if not total:
-                raise HTTPException(422, detail="Empty video")
-            temporary.seek(0)
-            try:
-                async with make_client(timeout=180) as client:
-                    resp = await client.post(
-                        worker + "/v1/dub/jobs", headers=upstream_headers(),
-                        files={"file": ("video.mp4", temporary, "video/mp4")},
-                        data={"source_language": source_language, "target_language": target_language}
-                    )
-                    return safe_upstream(resp)
-            except httpx.HTTPError as exc:
-                raise HTTPException(502, detail="Inference worker upload failed") from exc
+        # FastAPI UploadFile already spools large uploads to a temporary file.
+        # Reuse that file; making another 80-MiB copy would exhaust a small /tmp.
+        size = file.size
+        if size is None:
+            file.file.seek(0, 2)
+            size = file.file.tell()
+        if size > MAX_UPLOAD:
+            raise HTTPException(413, detail="Video exceeds 80 MiB")
+        if size == 0:
+            raise HTTPException(422, detail="Empty video")
+        await file.seek(0)
+        try:
+            async with make_client(timeout=180) as client:
+                resp = await client.post(
+                    worker + "/v1/dub/jobs", headers=upstream_headers(),
+                    files={"file": ("video.mp4", file.file, "video/mp4")},
+                    data={"source_language": source_language,
+                          "target_language": target_language}
+                )
+                return safe_upstream(resp)
+        except httpx.HTTPError as exc:
+            raise HTTPException(502, detail="Inference worker upload failed") from exc
     finally:
         await file.close()
+
 
 
 @app.get("/v1/dub/jobs/{job_id}/video", dependencies=[Depends(authenticate)])
