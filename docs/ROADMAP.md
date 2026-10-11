@@ -9,9 +9,9 @@
 - [ ] Run Android on physical Oppo/other device, verify mic permissions, Hindi/Arabic TTS voices and Bluetooth selection.
 - [ ] Install/evaluate real model packages and Hindi<->Arabic via English, including translation-quality evaluation.
 - [ ] Secure remote pairing (QR, user consent, per-session auth), privacy controls and encrypted WebRTC audio.
-- [ ] Genuine streaming ASR / VAD / MT / low-latency TTS with latency and interruption benchmarks.
-- [ ] Windows audio capture, virtual mic routing for OBS/live apps, closed-loop echo prevention.
-- [ ] Video ASR + TTS + alignment with audible final export; voice identity controls.
+- [x] Segmented microphone PCM16 WebSocket -> ASR/MT/TTS pipeline (3.2-second turns); model and phone latency still unverified.\n- [ ] True streaming low-latency ASR/VAD/MT/TTS, interruption benchmarks and overlapping-speaker handling.
+- [x] Windows mic streaming client and source-based Tkinter GUI, including playback-to-mic loop suppression.\n- [ ] Windows virtual-mic/OBS integration, full audio-device picker, and signed installer.
+- [x] Video ASR + MT + TTS + actual MP4 audio mux and SRT, with synthetic FFmpeg validation.\n- [ ] Editorial speech-duration alignment, background music retention, multi-speaker voices and voice identity consent workflow.
 - [ ] UI polish, instrumentation tests, hardware lab, app signing, signed releases.
 
 **Release criteria:** no false "instant" claim; paired-device A/B tests; authenticated transport; failure UX; full license/model asset inventory; CI green; documented offline/online limits.
