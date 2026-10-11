@@ -21,6 +21,7 @@ from .translator import ArgosTranslator
 
 MAX_UPLOAD_BYTES = 80 * 1024 * 1024
 MAX_ACTIVE_JOBS = 4
+MAX_RETAINED_JOBS = 20
 RETENTION_SECONDS = 3600
 
 
@@ -32,6 +33,7 @@ class Job:
     target: str
     created_at: float
     status: str = "queued"
+    finished_at: float | None = None
     error: str = ""
     output: Path | None = None
 
@@ -56,7 +58,7 @@ class JobQueue:
             for name, job in list(self._jobs.items()):
                 if job.status not in {"complete", "failed"}:
                     continue
-                if now - job.created_at < RETENTION_SECONDS:
+                if job.finished_at is None or now - job.finished_at < RETENTION_SECONDS:
                     continue
                 shutil.rmtree(job.workdir, ignore_errors=True)
                 del self._jobs[name]
@@ -64,6 +66,8 @@ class JobQueue:
     def allocate(self, source: str, target: str) -> Job:
         self.expire()
         with self._guard:
+            if len(self._jobs) >= MAX_RETAINED_JOBS:
+                raise RuntimeError("Video job quota reached; delete finished jobs")
             active = sum(1 for j in self._jobs.values() if j.status in ("queued", "running"))
             if active >= MAX_ACTIVE_JOBS:
                 raise RuntimeError("Queue capacity reached; retry after running jobs finish")
@@ -111,10 +115,12 @@ class JobQueue:
             with self._guard:
                 job.output = result_path
                 job.status = "complete"
+                job.finished_at = time.time()
         except Exception as exc:
             with self._guard:
                 job.error = f"{type(exc).__name__}: {str(exc)[:180]}"
                 job.status = "failed"
+                job.finished_at = time.time()
 
     def _perform(self, input_path: Path, output_path: Path,
                  source: str, target: str) -> None:

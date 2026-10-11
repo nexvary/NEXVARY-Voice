@@ -56,6 +56,20 @@ Text is not stored by the API. Audio is processed within a temporary directory
 removed after each turn. **Latency is >3.2 seconds plus model inference**.
 Do not promise instantaneous translation.
 
+## Windows installer helper
+
+On Windows 10/11, from the repository root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\windows\install.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\windows\launch.ps1
+```
+
+These scripts create a dedicated Python 3.11 virtual environment under the
+repository and start the native Tkinter desktop program. They do **not**
+install virtual audio drivers, models or a system-wide service. Always inspect
+downloaded scripts before execution.
+
 ## Desktop client
 
 ```powershell
