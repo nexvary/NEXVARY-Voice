@@ -172,6 +172,8 @@ class LiveStreamController(private val context: Context) {
         if (!state.startsWith("انقطع") && !state.startsWith("عطل")) state = "تم إيقاف الاستماع."
     }
 
+    fun stateMessage(text: String) { state = text }
+
     fun release() {
         stop()
         client.dispatcher.executorService.shutdown()
