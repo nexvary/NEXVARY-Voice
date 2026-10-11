@@ -2,8 +2,6 @@ package com.nexvary.voice
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.platform.app.InstrumentationRegistry
-import android.graphics.Bitmap
-import java.io.File
 import org.junit.Rule
 import org.junit.Test
 
@@ -28,14 +26,15 @@ class InterfaceLanguagesTest {
             rule.onNodeWithText(qr).performScrollTo().assertIsDisplayed().assertHasClickAction()
             rule.waitForIdle()
             val instrumentation=InstrumentationRegistry.getInstrumentation()
-            val directory=File(rule.activity.getExternalFilesDir(null),"screenshots").apply { mkdirs() }
-            val bitmap=instrumentation.uiAutomation.takeScreenshot()
-            requireNotNull(bitmap)
-            val file=File(directory,"android-settings-$code.png")
-            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
-            // Test-only shell identity exports proof before Gradle uninstalls the app.
-            val command="mkdir -p /sdcard/Download/nexvary-screenshots && cp ${file.absolutePath} /sdcard/Download/nexvary-screenshots/"
-            android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(command)).use { it.readBytes() }
+            // Shell captures the actual display into public test evidence,
+            // retained when Gradle uninstalls the tested application.
+            val path="/sdcard/Download/nexvary-screenshots/android-settings-$code.png"
+            for(command in listOf("mkdir -p /sdcard/Download/nexvary-screenshots","screencap -p $path")) {
+                android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(command)).use { it.readBytes() }
+            }
+            val saved=android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("ls $path")).use { String(it.readBytes()) }
+            check(saved.trim()==path) { "Screenshot export failed: $saved" }
+
         }
     }
 }
