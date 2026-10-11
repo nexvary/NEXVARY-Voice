@@ -80,6 +80,15 @@ def check_managed_client():
             speech = ws.recv(timeout=90)
             assert isinstance(speech,bytes) and len(speech)>16000
             (root/'samples'/'live-translated.pcm').write_bytes(speech)
+            # Exercise the short-turn flush protocol with the actual installed models.
+            short_pcm = pcm[:96000]
+            for offset in range(0,len(short_pcm),32000): ws.send(short_pcm[offset:offset+32000])
+            ws.send(json.dumps({'type':'flush'}))
+            short_meta = json.loads(ws.recv(timeout=90))
+            assert short_meta.get('translated_text'), short_meta
+            assert short_meta['chunk_seconds'] < 3.2
+            assert isinstance(ws.recv(timeout=90),bytes)
+            log('PASS: short-turn flush through real ASR/MT/TTS; '+json.dumps(short_meta['stage_seconds']))
             ws.send(json.dumps({'type':'stop'}))
         log('PASS: GUI WebSocket transport → Whisper → Argos → Piper → PCM; no physical microphone/speaker')
         job = client.submit_video(root/'validation-video'/'input.mp4','en','ar')
@@ -104,7 +113,7 @@ def check_managed_client():
         translate_srt(target.with_suffix('.srt').read_text(encoding='utf-8-sig'),'ar','en',Identity())
         log('PASS: GUI video submit, progress polling, MP4 and SRT download; verified both media streams')
         manager.restart();assert manager.health()
-        return {'state':'ready','transport':'real paired HTTPS and WSS relay through DesktopAPI','hardware_audio':False,'translation_turn_seconds':timings,'live_stage_seconds':meta['stage_seconds']}
+        return {'state':'ready','transport':'real paired HTTPS and WSS relay through DesktopAPI','hardware_audio':False,'translation_turn_seconds':timings,'live_stage_seconds':meta['stage_seconds'],'short_turn_stage_seconds':short_meta['stage_seconds']}
     finally:
         if bridge: bridge.stop()
         log(manager.stop())

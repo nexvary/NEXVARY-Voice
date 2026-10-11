@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from .desktop_api import DesktopAPI, ClientError, websocket_url
-from .desktop_audio import run_audio_session
+from .desktop_audio import run_audio_session, test_audio_devices
 from .setup_wizard import SetupDialog
 from . import desktop_setup
 
@@ -215,7 +215,7 @@ class VoiceWindow(QMainWindow):
         back = button("رجوع", "swap", primary=False)
         back.clicked.connect(self._back)
         side.addWidget(back)
-        side.addWidget(title("DESKTOP EDITION  •  v0.6.1", muted=True, point=10))
+        side.addWidget(title("DESKTOP EDITION  •  v0.6.2", muted=True, point=10))
         side.addWidget(title("Windows 10 / 11", muted=True, point=10))
 
         main = QFrame()
@@ -355,7 +355,7 @@ class VoiceWindow(QMainWindow):
 
     def _audio(self):
         scroll, col = self._viewport("الترجمة الصوتية عبر Windows",
-            "التقاط الميكروفون وإرسال مقاطع 3.2 ثوانٍ، وتشغيل الرد عبر سماعات Windows.")
+            "إرسال الكلام بعد توقف قصير، بحد أقصى 3.2 ثانية للمقطع، ثم تشغيل الرد عبر السماعة المختارة.")
         panel, form = card()
         pair, self.audio_source, self.audio_target = self._pair("ar", "en")
         form.addLayout(pair)
@@ -370,6 +370,9 @@ class VoiceWindow(QMainWindow):
         reload_devices = button("تحديث أجهزة الصوت", primary=False)
         reload_devices.clicked.connect(self._list_audio_devices)
         form.addWidget(reload_devices)
+        self.audio_test = button("اختبار الميكروفون والسماعة — تسجيل 3 ثوانٍ وتشغيلها", "mic", primary=False)
+        self.audio_test.clicked.connect(self._test_audio_devices)
+        form.addWidget(self.audio_test)
         buttons = QHBoxLayout()
         self.audio_start = button("ابدأ ترجمة الصوت", "mic")
         self.audio_start.clicked.connect(self._start_audio)
@@ -813,6 +816,25 @@ class VoiceWindow(QMainWindow):
         except Exception as exc:
             self._set_status("تعذر قراءة أجهزة الصوت: " + type(exc).__name__, False)
 
+    def _test_audio_devices(self):
+        if self._live and self._live.isRunning():
+            self._set_status("أوقف المحادثة قبل اختبار أجهزة الصوت.", False)
+            return
+        self.audio_test.setEnabled(False)
+        self.audio_start.setEnabled(False)
+        self._set_status("تحدث الآن لمدة ثلاث ثوانٍ؛ سيُشغّل التسجيل محليًا دون إرساله إلى الخادم.", True)
+        input_device, output_device = self.input_device.currentData(), self.output_device.currentData()
+        def finish(text):
+            self.audio_test.setEnabled(True)
+            self.audio_start.setEnabled(True)
+            self.audio_log.append(text)
+            self._set_status(text, True)
+        def failed(text):
+            self.audio_test.setEnabled(True)
+            self.audio_start.setEnabled(True)
+            self.audio_log.append("خطأ الاختبار: " + text)
+        self._task(lambda: test_audio_devices(input_device, output_device), finish, on_error=failed)
+
     def _start_audio(self):
         if self._live and self._live.isRunning():
             return
@@ -834,6 +856,7 @@ class VoiceWindow(QMainWindow):
         self._live.finished.connect(self._audio_stopped)
         self.audio_log.clear()
         self.audio_start.setEnabled(False)
+        self.audio_test.setEnabled(False)
         self.audio_stop.setEnabled(True)
         self._live.start()
         self._set_status("جارٍ بدء التقاط الصوت…", False)
@@ -852,6 +875,7 @@ class VoiceWindow(QMainWindow):
         self.audio_stop.setEnabled(False)
 
     def _audio_stopped(self):
+        self.audio_test.setEnabled(True)
         self.audio_start.setEnabled(True)
         self.audio_stop.setEnabled(False)
         self._live = None

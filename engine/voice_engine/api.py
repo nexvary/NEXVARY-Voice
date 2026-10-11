@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .translator import ArgosTranslator, TranslationUnavailable, Translator
 
-app = FastAPI(title="NEXVARY Voice Engine", version="0.6.1", docs_url="/docs")
+app = FastAPI(title="NEXVARY Voice Engine", version="0.6.2", docs_url="/docs")
 
 LANGUAGES = {
     "ar": "Arabic", "en": "English", "hi": "Hindi", "tr": "Turkish",
@@ -198,6 +198,7 @@ async def live_audio(websocket: WebSocket):
                     with exclusive('live-audio'): return processor.process(chunk, source, target)
                 translated = await run_in_threadpool(run_chunk)
                 if translated is None:
+                    await websocket.send_json({"type": "idle"})
                     return
                 meta, pcm = translated
                 await websocket.send_json(meta)

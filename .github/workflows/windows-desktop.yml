@@ -101,7 +101,7 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          $setup = (Resolve-Path "dist/installers/NEXVARY-Voice-Setup-v0.6.1.exe").Path
+          $setup = (Resolve-Path "dist/installers/NEXVARY-Voice-Setup-v0.6.2.exe").Path
           $destination = Join-Path $env:RUNNER_TEMP "nexvary-installed-اختبار"
           $installLog = Join-Path $env:GITHUB_WORKSPACE "build/setup-install.log"
           $setupArguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', "/DIR=`"$destination`"", "/LOG=`"$installLog`"")
@@ -118,11 +118,11 @@ jobs:
           Write-Host 'Actual Setup install, installed frozen GUI, and uninstall passed.'
       - name: Create portable ZIP
         shell: pwsh
-        run: Compress-Archive -Path dist/NEXVARY-Voice -DestinationPath dist/NEXVARY-Voice-Portable-v0.6.1.zip
+        run: Compress-Archive -Path dist/NEXVARY-Voice -DestinationPath dist/NEXVARY-Voice-Portable-v0.6.2.zip
       - name: SHA-256 checksums
         shell: pwsh
         run: |
-          $files = @(".\dist\NEXVARY-Voice\NEXVARY-Voice.exe", ".\dist\installers\NEXVARY-Voice-Setup-v0.6.1.exe", ".\dist\NEXVARY-Voice-Portable-v0.6.1.zip")
+          $files = @(".\dist\NEXVARY-Voice\NEXVARY-Voice.exe", ".\dist\installers\NEXVARY-Voice-Setup-v0.6.2.exe", ".\dist\NEXVARY-Voice-Portable-v0.6.2.zip")
           foreach ($f in $files) {
             $hash = (Get-FileHash $f -Algorithm SHA256).Hash.ToLower()
             "$hash  $(Split-Path $f -Leaf)" | Add-Content -Path ".\dist\SHA256SUMS.txt"
@@ -131,14 +131,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: NEXVARY-Voice-Windows-Portable
-          path: dist/NEXVARY-Voice-Portable-v0.6.1.zip
+          path: dist/NEXVARY-Voice-Portable-v0.6.2.zip
           if-no-files-found: error
           retention-days: 21
       - uses: actions/upload-artifact@v4
         with:
           name: NEXVARY-Voice-Windows-Setup
           path: |
-            dist/installers/NEXVARY-Voice-Setup-v0.6.1.exe
+            dist/installers/NEXVARY-Voice-Setup-v0.6.2.exe
             dist/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 21
