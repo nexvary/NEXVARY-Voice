@@ -2,6 +2,7 @@ package com.nexvary.voice
 
 import android.Manifest
 import android.content.Context
+import android.net.Uri
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import android.content.pm.ApplicationInfo
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.CompositionLocalProvider
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -89,6 +91,11 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
     var sourceSrt by remember { mutableStateOf("") }
     var outputSrt by remember { mutableStateOf("") }
     var srtLabel by remember { mutableStateOf("لم يتم اختيار ملف SRT") }
+    var videoUri by remember { mutableStateOf<Uri?>(null) }
+    var videoName by remember { mutableStateOf("لم يتم اختيار فيديو MP4") }
+    var videoJobId by remember { mutableStateOf("") }
+    var videoState by remember { mutableStateOf("") }
+    var videoBusy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val pair = Direction(from, to)
 
@@ -139,6 +146,30 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                     ?: error("تعذر فتح الملف للكتابة")
                 status = "تم حفظ ملف SRT المترجم."
             } catch (e: Exception) { status = "تعذر حفظ الملف: " + e.message }
+        }
+    }
+
+    val pickMp4 = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            videoUri = uri
+            videoName = uri.lastPathSegment?.takeLast(70) ?: "video.mp4"
+            videoJobId = ""
+            videoState = "تم اختيار الفيديو. اضغط بدء الدبلجة لإرساله إلى خادمك."
+        }
+    }
+    val saveMp4 = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("video/mp4")) { uri ->
+        if (uri != null && videoJobId.isNotBlank()) {
+            scope.launch {
+                videoState = "تنزيل الفيديو المترجم..."
+                try {
+                    withContext(Dispatchers.IO) {
+                        VideoClient.download(context, endpoint, token, videoJobId, uri)
+                    }
+                    videoState = "تم حفظ ملف MP4 المترجم."
+                } catch (e: Exception) {
+                    videoState = "فشل حفظ الفيديو: " + (e.message ?: "خطأ")
+                }
+            }
         }
     }
 
@@ -273,6 +304,61 @@ fun VoiceApp(audio: VoiceAudioController, onListen: (String) -> Unit) {
                                             Text("إعادة الاستماع", color = Aqua)
                                         }
                                     }
+                                }
+                                GlassCard {
+                                    StatusTag("دبلجة MP4 عبر خادم Ubuntu • تعمل بنظام المهام", Aqua)
+                                    Text("دبلجة فيديو إلى لغة أخرى", fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold, color = Silver)
+                                    Text("استيراد MP4 بحجم لا يتجاوز 80 ميجابايت. يعالج الخادم الكلام وينشئ صوتًا مترجمًا جديدًا، ثم يمكنك تنزيل الفيديو. يلزم تثبيت نماذج Whisper وArgos وPiper على الخادم.",
+                                        color = Muted, fontSize = 12.sp)
+                                    Text(videoName, color = Aqua, fontSize = 12.sp)
+                                    ActionButton("اختيار فيديو MP4", Icons.Rounded.FileOpen, false, false) {
+                                        pickMp4.launch(arrayOf("video/mp4"))
+                                    }
+                                    ActionButton("بدء الدبلجة على الخادم", Icons.Rounded.Movie, true,
+                                        videoBusy || videoUri == null) {
+                                        val picked = videoUri
+                                        if (!videoBusy && picked != null && pair.isValid()) {
+                                            videoBusy = true
+                                            videoState = "رفع الفيديو إلى الخادم..."
+                                            scope.launch {
+                                                try {
+                                                    videoJobId = withContext(Dispatchers.IO) {
+                                                        VideoClient.submit(context, endpoint, token, picked, pair)
+                                                    }
+                                                    videoState = "بدأت معالجة الفيديو..."
+                                                    while (true) {
+                                                        delay(3000)
+                                                        val result = withContext(Dispatchers.IO) {
+                                                            VideoClient.status(endpoint, token, videoJobId)
+                                                        }
+                                                        val state = result.optString("status")
+                                                        when (state) {
+                                                            "complete" -> {
+                                                                videoState = "اكتملت الدبلجة؛ احفظ الفيديو."
+                                                                break
+                                                            }
+                                                            "failed" -> {
+                                                                videoState = "فشلت الدبلجة: " + result.optString("error")
+                                                                break
+                                                            }
+                                                            else -> videoState = "الحالة: " + state
+                                                        }
+                                                    }
+                                                } catch (e: Exception) {
+                                                    videoState = "عطل في الدبلجة: " + (e.message ?: "خطأ")
+                                                } finally { videoBusy = false }
+                                            }
+                                        }
+                                    }
+                                    if (videoJobId.isNotBlank() && videoState.contains("اكتملت")) {
+                                        ActionButton("حفظ الفيديو المترجم MP4", Icons.Rounded.FileDownload,
+                                            false, false) {
+                                            saveMp4.launch("NEXVARY-Voice-Dubbed.mp4")
+                                        }
+                                    }
+                                    if (videoState.isNotBlank()) Text(videoState, color = Aqua,
+                                        fontSize = 12.sp)
                                 }
                                 GlassCard {
                                     StatusTag("ترجمة ملف SRT — الدبلجة الصوتية الكاملة قيد التطوير", Blue)
