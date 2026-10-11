@@ -7,6 +7,7 @@ import os
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from .subtitles import translate_srt
 from pydantic import BaseModel, Field, field_validator
 
 from .translator import ArgosTranslator, TranslationUnavailable, Translator
@@ -39,6 +40,23 @@ class Turn(BaseModel):
         if not value:
             raise ValueError("Text cannot be blank")
         return value
+
+
+class SubtitleRequest(BaseModel):
+    srt: str = Field(min_length=1, max_length=500_000)
+    source_language: str
+    target_language: str
+
+    @field_validator("source_language", "target_language")
+    @classmethod
+    def validate_language(cls, value: str) -> str:
+        return Turn.validate_language(value)
+
+
+class SubtitleResult(BaseModel):
+    srt: str
+    source_language: str
+    target_language: str
 
 
 class TranslationResult(BaseModel):
@@ -94,6 +112,23 @@ def translate(turn: Turn, translator: Translator = Depends(get_translator)):
             status_code=503,
             detail={"code": "model_unavailable", "message": str(exc)},
         ) from exc
+
+
+@app.post("/v1/subtitles/translate", response_model=SubtitleResult, dependencies=[Depends(require_token)])
+def translate_subtitles(payload: SubtitleRequest, translator: Translator = Depends(get_translator)):
+    """Translate existing subtitle text. Does not synthesize voices."""
+    if payload.source_language == payload.target_language:
+        return SubtitleResult(srt=payload.srt, source_language=payload.source_language,
+                              target_language=payload.target_language)
+    try:
+        translated = translate_srt(payload.srt, payload.source_language, payload.target_language, translator)
+        return SubtitleResult(srt=translated, source_language=payload.source_language,
+                              target_language=payload.target_language)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except TranslationUnavailable as exc:
+        raise HTTPException(status_code=503, detail={"code": "model_unavailable",
+                                                       "message": str(exc)}) from exc
 
 
 @app.websocket("/v1/live/text")
