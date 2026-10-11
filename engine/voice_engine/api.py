@@ -1,4 +1,4 @@
-"""HTTP and text-WebSocket API. Audio streaming is not implemented in this release."""
+"""Text, subtitle and segmented speech-audio WebSocket API."""
 from __future__ import annotations
 
 import hmac
@@ -7,12 +7,15 @@ import os
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
+from starlette.concurrency import run_in_threadpool
+from .speech import AudioBackendUnavailable
+from .live import CHUNK_BYTES, MAX_FRAME_BYTES, MIN_CHUNK_BYTES, get_live_processor
 from .subtitles import translate_srt
 from pydantic import BaseModel, Field, field_validator
 
 from .translator import ArgosTranslator, TranslationUnavailable, Translator
 
-app = FastAPI(title="NEXVARY Voice Engine", version="0.1.0", docs_url="/docs")
+app = FastAPI(title="NEXVARY Voice Engine", version="0.3.0", docs_url="/docs")
 
 LANGUAGES = {
     "ar": "Arabic", "en": "English", "hi": "Hindi", "tr": "Turkish",
@@ -95,7 +98,7 @@ def process_turn(turn: Turn, translator: Translator) -> TranslationResult:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "component": "voice-engine", "audio_streaming": False}
+    return {"status": "ok", "component": "voice-engine", "audio_streaming": True, "protocol": "segmented_pcm16_speech_turns"}
 
 
 @app.get("/v1/languages", dependencies=[Depends(require_token)])
@@ -154,3 +157,77 @@ async def live_text(websocket: WebSocket, translator: Translator = Depends(get_t
                 await websocket.send_json({"error": "model_unavailable", "message": str(exc)})
     except WebSocketDisconnect:
         pass
+
+
+@app.websocket("/v1/live/audio")
+async def live_audio(websocket: WebSocket):
+    """Authenticated half-duplex PCM16 audio turns, 3.2 seconds per ASR pass.
+
+    Handshake JSON: {"source_language":"hi","target_language":"ar",
+                     "format":"pcm_s16le","sample_rate":16000}
+    Then send binary microphone PCM. Reply: translated JSON followed by raw PCM16
+    binary at 16 kHz. This is not continuous overlapping-speaker diarization.
+    """
+    if not token_valid(websocket.headers.get("authorization")):
+        await websocket.close(code=1008, reason="Unauthorized")
+        return
+    await websocket.accept()
+    try:
+        hello = await websocket.receive_json()
+        source = Turn.validate_language(str(hello.get("source_language", "")))
+        target = Turn.validate_language(str(hello.get("target_language", "")))
+        if (source == target or hello.get("format") != "pcm_s16le"
+                or hello.get("sample_rate") != 16000):
+            await websocket.send_json({"type": "error", "message": "Invalid PCM16 session parameters"})
+            await websocket.close(code=1003)
+            return
+        try:
+            processor = await run_in_threadpool(get_live_processor)
+        except AudioBackendUnavailable as exc:
+            await websocket.send_json({"type": "error", "message": str(exc)})
+            await websocket.close(code=1011)
+            return
+        buffer = bytearray()
+        async def handle(chunk: bytes) -> None:
+            try:
+                translated = await run_in_threadpool(processor.process, chunk, source, target)
+                if translated is None:
+                    return
+                meta, pcm = translated
+                await websocket.send_json(meta)
+                await websocket.send_bytes(pcm)
+            except (AudioBackendUnavailable, TranslationUnavailable, ValueError) as exc:
+                await websocket.send_json({"type": "error", "message": str(exc)[:180]})
+
+        while True:
+            incoming = await websocket.receive()
+            if incoming["type"] == "websocket.disconnect":
+                return
+            data = incoming.get("bytes")
+            if data is None:
+                try:
+                    message = json.loads(incoming.get("text") or "{}")
+                except ValueError:
+                    await websocket.send_json({"type": "error", "message": "Invalid control message"})
+                    continue
+                if message.get("type") == "stop":
+                    return
+                if message.get("type") == "flush":
+                    if len(buffer) >= MIN_CHUNK_BYTES:
+                        await handle(bytes(buffer))
+                    buffer.clear()
+                continue
+            if not data or len(data) > MAX_FRAME_BYTES or len(data) % 2:
+                await websocket.send_json({"type": "error", "message": "Invalid PCM frame size"})
+                continue
+            buffer.extend(data)
+            while len(buffer) >= CHUNK_BYTES:
+                chunk = bytes(buffer[:CHUNK_BYTES])
+                del buffer[:CHUNK_BYTES]
+                await handle(chunk)
+    except (WebSocketDisconnect, KeyError, ValueError, TypeError):
+        # End malformed client sessions without traceback or transcript persistence.
+        try:
+            await websocket.close(code=1003)
+        except RuntimeError:
+            pass
