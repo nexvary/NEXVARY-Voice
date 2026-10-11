@@ -35,11 +35,20 @@ def check_managed_client():
     """Real GUI client transport and owned engine; generated audio, no hardware."""
     from voice_engine.desktop_api import DesktopAPI
     from websockets.sync.client import connect
+    import ssl, httpx
+    from voice_engine.phone_bridge import PhoneBridge
     manager = desktop_setup.EngineManager()
+    bridge = None
     try:
         log(manager.start())
         assert manager.process is not None, 'CI must start its own loopback engine'
-        client = DesktopAPI('http://127.0.0.1:8000')
+        bridge=PhoneBridge('127.0.0.1',allow_loopback=True).start()
+        bridge.qr()
+        tls=ssl.create_default_context(cafile=str(Path(bridge.temp.name)/'cert.pem'))
+        with httpx.Client(verify=tls,trust_env=False) as pairing:
+            assert pairing.get(bridge.endpoint+'/health').status_code==401
+            token=pairing.post(bridge.endpoint+'/pair',json={'code':bridge.state.code}).json()['token']
+        client = DesktopAPI(bridge.endpoint,token,transport=httpx.HTTPTransport(verify=tls))
         assert client.health()['status']=='ok'
         assert client.translate('Hello, this is a voice test.', 'en', 'ar').strip()
         srt = client.translate_srt('1\n00:00:00,000 --> 00:00:02,000\nHello\n','en','ar')
@@ -52,7 +61,8 @@ def check_managed_client():
                         '-i',str(root/'samples'/'en.wav'),'-ac','1','-ar','16000',
                         '-f','s16le',str(raw)],check=True,timeout=30)
         pcm = raw.read_bytes()[:102400]
-        with connect('ws://127.0.0.1:8000/v1/live/audio',open_timeout=15,close_timeout=5) as ws:
+        with connect(bridge.endpoint.replace('https://','wss://')+'/v1/live/audio',ssl=tls,
+                     additional_headers={'Authorization':'Bearer '+token},open_timeout=15,close_timeout=5) as ws:
             ws.send(json.dumps(dict(source_language='en',target_language='ar',format='pcm_s16le',sample_rate=16000)))
             for offset in range(0,len(pcm),32000): ws.send(pcm[offset:offset+32000])
             ws.send(json.dumps({'type':'flush'}))
@@ -85,8 +95,9 @@ def check_managed_client():
         translate_srt(target.with_suffix('.srt').read_text(encoding='utf-8-sig'),'ar','en',Identity())
         log('PASS: GUI video submit, progress polling, MP4 and SRT download; verified both media streams')
         manager.restart();assert manager.health()
-        return {'state':'ready','transport':'real HTTP and WebSocket through DesktopAPI','hardware_audio':False}
+        return {'state':'ready','transport':'real paired HTTPS and WSS relay through DesktopAPI','hardware_audio':False}
     finally:
+        if bridge: bridge.stop()
         log(manager.stop())
 
 parser=argparse.ArgumentParser()

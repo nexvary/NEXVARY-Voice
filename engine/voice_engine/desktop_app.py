@@ -1060,6 +1060,18 @@ def main(argv=None):
         wizard.close(); window.close()
         return 0
     if "--self-test" in argv:
+        # Explicit CI self-test only: no LAN listener or automatic public service.
+        import ssl, httpx
+        from .phone_bridge import PhoneBridge
+        bridge=PhoneBridge('127.0.0.1',allow_loopback=True).start()
+        try:
+            assert bridge.qr().startswith(b'\x89PNG')
+            tls=ssl.create_default_context(cafile=str(Path(bridge.temp.name)/'cert.pem'))
+            with httpx.Client(verify=tls,trust_env=False) as pairing:
+                assert pairing.get(bridge.endpoint+'/health').status_code==401
+                response=pairing.post(bridge.endpoint+'/pair',json={'code':bridge.state.code})
+                assert response.status_code==200 and len(response.json()['token'])>=40
+        finally: bridge.stop()
         assert QFontMetrics(app.font()).inFontUcs4(0x0627), 'Arabic font glyph missing'
         wizard = SetupDialog(window, audit=False)
         assert len(wizard.rows) == 8

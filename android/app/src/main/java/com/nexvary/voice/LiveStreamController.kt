@@ -35,6 +35,7 @@ class LiveStreamController(private val context: Context) {
 
     private val running = AtomicBoolean(false)
     private val playing = AtomicBoolean(false)
+    private var client: OkHttpClient? = null
     private var socket: WebSocket? = null
     private var capture: AudioRecord? = null
     private var speaker: AudioTrack? = null
@@ -90,7 +91,11 @@ class LiveStreamController(private val context: Context) {
         running.set(true)
         active = true
         state = "جارٍ الاتصال بالمترجم الصوتي…"
-        socket = ComputerPairing.client(raw).readTimeout(0, TimeUnit.MILLISECONDS).pingInterval(20, TimeUnit.SECONDS).build().newWebSocket(request, object : WebSocketListener() {
+        client?.dispatcher?.executorService?.shutdown()
+        client?.connectionPool?.evictAll()
+        val connectionClient = ComputerPairing.client(raw).readTimeout(0, TimeUnit.MILLISECONDS).pingInterval(20, TimeUnit.SECONDS).build()
+        client = connectionClient
+        socket = connectionClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 val hello = JSONObject()
                     .put("source_language", source).put("target_language", target)
@@ -173,7 +178,8 @@ class LiveStreamController(private val context: Context) {
 
     fun release() {
         stop()
-        client.dispatcher.executorService.shutdown()
-        client.connectionPool.evictAll()
+        client?.dispatcher?.executorService?.shutdown()
+        client?.connectionPool?.evictAll()
+        client = null
     }
 }
